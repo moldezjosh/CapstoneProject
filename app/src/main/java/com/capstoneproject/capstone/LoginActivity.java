@@ -21,7 +21,7 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 
 
 /**
- * A login screen that offers login via email/password.
+ * Created by moldezjosh on 3/14/2019.
  */
 public class LoginActivity extends AppCompatActivity {
 
