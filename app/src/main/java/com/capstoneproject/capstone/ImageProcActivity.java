@@ -59,6 +59,7 @@ import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 //import org.opencv.features2d.DMatch;
+//import org.opencv.features2d.DMatch;
 import org.opencv.features2d.DescriptorExtractor;
 import org.opencv.features2d.DescriptorMatcher;
 import org.opencv.features2d.FeatureDetector;
@@ -78,10 +79,6 @@ import java.util.Date;
 import java.util.List;
 
 public class ImageProcActivity extends AbsRuntimePermission  {
-
-    //static final int REQUEST_IMAGE_CAPTURE = 1;
-    //private String mCurrentPhotoPath = null;
-    //private static final int REQUEST_PERMISSION = 10;
 
     private static final String TAG = "MainActivity";
     ImageView imgView;
@@ -132,13 +129,14 @@ public class ImageProcActivity extends AbsRuntimePermission  {
 
 
         captureImage();
+        imgView = findViewById(R.id.imgView);
 
     }
 
-    private void reqPermission() {
-        requestAppPermissions(new String[] {Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA, Manifest.permission.INTERNET, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION},
-                R.string.msg,REQUEST_PERMISSION);
-    }
+//    private void reqPermission() {
+//        requestAppPermissions(new String[] {Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA, Manifest.permission.INTERNET, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION},
+//                R.string.msg,REQUEST_PERMISSION);
+//    }
 
     @Override
     public void onPermissionsGranted(int requestCode) {
@@ -151,7 +149,7 @@ public class ImageProcActivity extends AbsRuntimePermission  {
         super.onResume();
 
         if (!OpenCVLoader.initDebug()) {
-            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_13, this, mLoaderCallback);
+            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_4_0, this, mLoaderCallback);
         } else {
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
@@ -171,6 +169,27 @@ public class ImageProcActivity extends AbsRuntimePermission  {
             }
         }
     }
+    private void resultView() {
+        FirebaseUser user = mAuth.getCurrentUser();
+        Intent i = new Intent(getBaseContext(), ResultActivity.class);
+        Bundle extras = new Bundle();
+        extras.putString("label", label);
+        extras.putString("email", user.getEmail());
+        extras.putString("authenticity", authenticity);
+        extras.putStringArray("location", new String[]{String.valueOf(latitude), String.valueOf(longitude)});
+        i.putExtras(extras);
+        getApplicationContext().startActivity(i);
+
+        label = null;
+        authenticity = null;
+        latitude = 0;
+        longitude = 0;
+
+    }
+
+    public static Bitmap queryImage() {
+        return selectedImage;
+    }
 
     private void captureImage() {
         final CharSequence[] items = {"Camera", "Cancel"};
@@ -181,7 +200,7 @@ public class ImageProcActivity extends AbsRuntimePermission  {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 if(items[which].equals("Camera")) {
-                    reqPermission();
+                    //reqPermission();
 
                     Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 
@@ -253,16 +272,17 @@ public class ImageProcActivity extends AbsRuntimePermission  {
                                 }
                             });
                 }
-            } else if(requestCode==SELECT_FILE){
-                Uri selectImageUri = data.getData();
-                Log.d(TAG, "onScanCompleted: " + selectImageUri);
-
-                //path converted from Uri
-                String convertedPath = getRealPathFromURI(selectImageUri);
-
-                //load image in background
-                new ImageLoaderClass().execute(convertedPath);
             }
+            //else if(requestCode==SELECT_FILE){
+//                Uri selectImageUri = data.getData();
+//                Log.d(TAG, "onScanCompleted: " + selectImageUri);
+//
+//                //path converted from Uri
+//                String convertedPath = getRealPathFromURI(selectImageUri);
+//
+//                //load image in background
+//                new ImageLoaderClass().execute(convertedPath);
+//            }
         } else {
             if(mCurrentPhotoPath != null) {
                 Uri imageUri = Uri.parse(mCurrentPhotoPath);
@@ -651,30 +671,22 @@ public class ImageProcActivity extends AbsRuntimePermission  {
     private File createImageFile() throws IOException {
         // Create an image file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = "JPEG_" + timeStamp + "_";
+        String imageFileName = "JPEG_" + timeStamp;
         File storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "MAC");
 
 
-//        if (!storageDir.exists()) {
-//            storageDir.mkdirs();
-//        }
-        if (!storageDir.getParentFile().exists())
-            storageDir.getParentFile().mkdirs();
-        if (!storageDir.exists())
-            storageDir.createNewFile();
+        if(!storageDir.exists()){
+            storageDir.mkdirs();
+        }else if (storageDir.exists()) {
+            storageDir.delete();
+            storageDir.mkdirs();
+        }
 
-
-        File image = new File(storageDir, imageFileName);
-//
-//
-//                File.createTempFile(
-//                imageFileName,  /* prefix */
-//                ".jpg",         /* suffix */
-//                storageDir      /* directory */
-//        );
+        File image = new File(storageDir, imageFileName + ".jpg");
 
         // Save a file: path for use with ACTION_VIEW intents
         mCurrentPhotoPath = "file:" + image.getAbsolutePath();
+
         return image;
     }
 }
