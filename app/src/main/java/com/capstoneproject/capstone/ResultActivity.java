@@ -37,16 +37,16 @@ public class ResultActivity extends AppCompatActivity {
 
         result = ImageProcActivity.queryImage();
         Bundle extras = getIntent().getExtras();
-        final String label = extras.getString("label");
-        final String email = extras.getString("email");
+//        final String label = extras.getString("label");
+//        final String email = extras.getString("email");
         final String authenticity = extras.getString("authenticity");
-        final String[] location = extras.getStringArray("location");
+       // final String[] location = extras.getStringArray("location");
 
-        TextView textView = findViewById(R.id.information);
-        textView.setText(label);
-
-        TextView locationView = findViewById(R.id.location);
-        locationView.setText(location[0] + ", " + location[1]);
+//        TextView textView = findViewById(R.id.information);
+//        textView.setText(label);
+//
+//        TextView locationView = findViewById(R.id.location);
+//        locationView.setText(location[0] + ", " + location[1]);
 
         TextView authRateView = findViewById(R.id.auth_rate);
         authRateView.setText(authenticity);

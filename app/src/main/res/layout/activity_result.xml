@@ -32,16 +32,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical" >
 
-            <TextView
-                android:id="@+id/textView3"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingLeft="@dimen/fab_margin"
-                android:paddingRight="@dimen/fab_margin"
-                android:text="Medicine"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                tools:text="Medicine" />
 
             <TextView
                 android:id="@+id/information"
