@@ -40,6 +40,8 @@
             android:label="AuthentiKit"></activity>
         <activity
             android:name=".LoginActivity"></activity>
+        <activity
+            android:name=".ResultActivity" android:label="Results"></activity>
     </application>
 
 </manifest>

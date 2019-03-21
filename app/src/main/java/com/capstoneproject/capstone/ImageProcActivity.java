@@ -4,17 +4,13 @@ package com.capstoneproject.capstone;
  * Created by moldezjosh on 3/15/2019.
  */
 
-import android.Manifest;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.CursorLoader;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
@@ -24,10 +20,11 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -36,6 +33,8 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -43,6 +42,8 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.MemoryPolicy;
 import com.squareup.picasso.Picasso;
@@ -56,23 +57,19 @@ import org.opencv.core.DMatch;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDMatch;
 import org.opencv.core.MatOfKeyPoint;
-import org.opencv.core.Scalar;
 import org.opencv.core.Size;
-//import org.opencv.features2d.DMatch;
 //import org.opencv.features2d.DMatch;
 import org.opencv.features2d.DescriptorExtractor;
 import org.opencv.features2d.DescriptorMatcher;
 import org.opencv.features2d.FeatureDetector;
 import org.opencv.features2d.Features2d;
 import org.opencv.imgproc.Imgproc;
-import com.google.firebase.auth.FirebaseAuth;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-//import java.lang.annotation.Target;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -80,7 +77,7 @@ import java.util.List;
 
 public class ImageProcActivity extends AbsRuntimePermission  {
 
-    private static final String TAG = "MainActivity";
+    private static final String TAG = "ImageProcActivity";
     ImageView imgView;
     Integer REQUEST_CAMERA = 1, SELECT_FILE = 0;
     private static Bitmap selectedImage, result, sampleBitmap, datasetBitmap;
@@ -89,7 +86,7 @@ public class ImageProcActivity extends AbsRuntimePermission  {
     Mat Rgba, imgGray, sampleMat, datasetMat, graySampleMat, grayDatasetMat, sampleDescriptors, datasetDescriptors;
     Toast toast;
     FeatureDetector detector;
-    private String mCurrentPhotoPath = null, authenticity, label = null;
+    private String mCurrentPhotoPath = null, authenticity;
     private static final int REQUEST_PERMISSION = 10;
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -119,6 +116,8 @@ public class ImageProcActivity extends AbsRuntimePermission  {
     private FirebaseAuth.AuthStateListener mAuthListener;
     private FirebaseDatabase firebaseDatabase;
     private DatabaseReference databaseReferenceDataset;
+    private StorageReference storageRef;
+    private FirebaseStorage storage;
     private DatabaseReference connectedRef;
     Target targetDataset;
 
@@ -127,9 +126,31 @@ public class ImageProcActivity extends AbsRuntimePermission  {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_imageproc);
 
+        storage = FirebaseStorage.getInstance();
+        firebaseDatabase = FirebaseDatabase.getInstance();
+        storageRef = storage.getReference();
+        context = this;
 
         captureImage();
         imgView = findViewById(R.id.imgView);
+        pbar = findViewById(R.id.progressBar);
+        pbar.setVisibility(View.GONE);
+
+        auth = findViewById(R.id.auth);
+        auth.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(final View view) {
+                if (selectedImage != null) {
+                    new GetDataset().execute(view);
+                } else {
+                    Snackbar.make(view, "Please add image", Snackbar.LENGTH_SHORT)
+                            .setAction("Action", null).show();
+                }
+            }
+        });
+
+//        FirebaseConnectionStatus firebaseConnectionStatus = new FirebaseConnectionStatus(getApplicationContext(), toast);
+//        firebaseConnectionStatus.connectionStatus();
 
     }
 
@@ -170,20 +191,22 @@ public class ImageProcActivity extends AbsRuntimePermission  {
         }
     }
     private void resultView() {
-        FirebaseUser user = mAuth.getCurrentUser();
-        Intent i = new Intent(getBaseContext(), ResultActivity.class);
+//        FirebaseUser user = mAuth.getCurrentUser();
+        Intent i = new Intent(ImageProcActivity.this, ResultActivity.class);
         Bundle extras = new Bundle();
-        extras.putString("label", label);
-        extras.putString("email", user.getEmail());
-        extras.putString("authenticity", authenticity);
-        extras.putStringArray("location", new String[]{String.valueOf(latitude), String.valueOf(longitude)});
-        i.putExtras(extras);
-        getApplicationContext().startActivity(i);
 
-        label = null;
+        //extras.putString("email", user.getEmail());
+        extras.putString("authenticity", authenticity);
+//        extras.putStringArray("location", new String[]{String.valueOf(latitude), String.valueOf(longitude)});
+        i.putExtras(extras);
+//        getApplicationContext().startActivity(i);
+        startActivity(i);
+        finish();
+
+
         authenticity = null;
-        latitude = 0;
-        longitude = 0;
+//        latitude = 0;
+//        longitude = 0;
 
     }
 
@@ -268,21 +291,13 @@ public class ImageProcActivity extends AbsRuntimePermission  {
                                 public void onScanCompleted(String path, Uri uri) {
                                     Log.d(TAG, "onScanCompleted: " + path + " - " + uri);
                                     //load image in background
-//                                new ImageLoaderClass().execute(path);
+                                new ImageLoaderClass().execute(path);
                                 }
                             });
+
+
                 }
             }
-            //else if(requestCode==SELECT_FILE){
-//                Uri selectImageUri = data.getData();
-//                Log.d(TAG, "onScanCompleted: " + selectImageUri);
-//
-//                //path converted from Uri
-//                String convertedPath = getRealPathFromURI(selectImageUri);
-//
-//                //load image in background
-//                new ImageLoaderClass().execute(convertedPath);
-//            }
         } else {
             if(mCurrentPhotoPath != null) {
                 Uri imageUri = Uri.parse(mCurrentPhotoPath);
@@ -320,6 +335,46 @@ public class ImageProcActivity extends AbsRuntimePermission  {
         return super.onOptionsItemSelected(item);
     }
 
+    private class GetDataset extends AsyncTask<View, String, View> {
+        ProgressDialog progressDialog;
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progressDialog = new ProgressDialog(context);
+            progressDialog.setCancelable(false);
+            progressDialog.show();
+        }
+
+        @Override
+        protected void onPostExecute(final View view) {
+            super.onPostExecute(view);
+            progressDialog.dismiss();
+
+
+                hasDataset(new CustomCallback() {
+                    @Override
+                    public void onCallback(String url) {
+                        if(url != null) {
+                            authProcess(Uri.parse(url), view);
+                            Log.d(TAG, "shoutout mga tuko (getdataset): ");
+                        } else {
+                            //ocrDialog(label, view);
+                            authProcess(Uri.parse(url), view);
+                            Log.d(TAG, "shoutout mga tuko else (getdataset): ");
+                        }
+                    }
+                });
+
+        }
+
+        @Override
+        protected View doInBackground(View... strings) {
+            progressDialog.setMessage("Recognizing labels");
+            //label = labelRecognition();
+            return strings[0];
+        }
+    }
+
     public static int calculateImageSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
         final int height = options.outHeight;
         final int width = options.outWidth;
@@ -355,21 +410,6 @@ public class ImageProcActivity extends AbsRuntimePermission  {
         return BitmapFactory.decodeFile(path, options);
     }
 
-    public String getRealPathFromURI(Uri contentUri) {
-        String[] proj = { MediaStore.Images.Media.DATA };
-
-        //This method was deprecated in API level 11
-        CursorLoader cursorLoader = new CursorLoader(
-                this,
-                contentUri, proj, null, null, null);
-        Cursor cursor = cursorLoader.loadInBackground();
-
-        int column_index =
-                cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
-        cursor.moveToFirst();
-        return cursor.getString(column_index);
-    }
-
     private class ImageProcessing extends AsyncTask<Bitmap, String, Boolean> {
         ProgressDialog progressDialog;
 
@@ -400,7 +440,7 @@ public class ImageProcActivity extends AbsRuntimePermission  {
             progressDialog.dismiss();
 
             if(aBoolean) {
-                //resultView();
+                resultView();
             } else {
                 Toast.makeText(getApplicationContext(), "Query image is not qualified to continue the process. Try another one.", Toast.LENGTH_SHORT).show();
             }
@@ -488,9 +528,9 @@ public class ImageProcActivity extends AbsRuntimePermission  {
                 return false;
             } else {
                 if(fMatchAve >= 65) {
-                    authenticity = "Counterfeit product";
+                    authenticity = "Counterfeit MAC";
                 } else {
-                    authenticity = "Authentic product";
+                    authenticity = "Authentic MAC";
                 }
             }
 
@@ -498,43 +538,12 @@ public class ImageProcActivity extends AbsRuntimePermission  {
         }
     }
 
-    private void getColor() {
-        int r = 255, g = 165, b = 0;
-        int width = selectedImage.getWidth();
-        int height = selectedImage.getHeight();
-        int Red = 0, Green = 0, Blue = 0;
-        int pixelColor;
-        int size = 0;
-
-        for(int x = 0; x < width; x++) {
-            for(int y = 0; y < height; y++) {
-                pixelColor = selectedImage.getPixel(x, y);
-                Red = Color.red(pixelColor);
-                Green = Color.green(pixelColor);
-                Blue = Color.blue(pixelColor);
-
-                if((Red < r - 70 || Red > r + 70) && (Green < g - 70 || Green > g + 70) && (Blue < b - 70 || Blue > b + 70)) {
-                    Red += Red;
-                    Green += Green;
-                    Blue += Blue;
-                    size++;
-                }
-            }
-        }
-
-        Red /= size;
-        Green /= size;
-        Blue /= size;
-
-        Log.d(TAG, "getColor: R="+Red+", G="+Green+", B="+Blue);
-    }
-
     private class ImageLoaderClass extends AsyncTask<String, String, Bitmap> {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
 
-            pbar.setVisibility(View.VISIBLE);
+//            pbar.setVisibility(View.VISIBLE);
         }
 
         @Override
@@ -543,7 +552,7 @@ public class ImageProcActivity extends AbsRuntimePermission  {
 
             if(bitmap != null) {
                 imgView.setImageBitmap(bitmap);
-                pbar.setVisibility(View.GONE);
+                //pbar.setVisibility(View.GONE);
             }
 
             if (selectedImage != null) {
@@ -573,55 +582,90 @@ public class ImageProcActivity extends AbsRuntimePermission  {
         }
     }
 
-    private void hasDataset(final String drugname, final CustomCallback customCallback) {
-        databaseReferenceDataset = firebaseDatabase.getReference("DATASETS");
+    private void hasDataset(final CustomCallback customCallback) {
+        //databaseReferenceDataset = firebaseDatabase.getReference("datasets");
+        Log.d(TAG, "shoutout mga tuko: ");
 
-        databaseReferenceDataset.addListenerForSingleValueEvent(new ValueEventListener() {
+        storageRef.child("datasets/mac/maclogo.jpg").getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
             @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                int dataSnapshotLength = (int) dataSnapshot.getChildrenCount();
+            public void onSuccess(Uri uri) {
+                // Got the download URL for 'datasets/mac/maclogo.jpg'
+                //final Uri uri = Uri.parse(url);
 
-                for (DataSnapshot dataset: dataSnapshot.getChildren()) {
-                    String drugnameDataset = dataset.child("drug").getValue(String.class);
-                    dataSnapshotLength--;
-
-                    if(drugname.toLowerCase().contains(drugnameDataset.toLowerCase())){
-                        final String url = dataset.child("url").getValue(String.class);
-                        final Uri uri = Uri.parse(url);
-                        label = drugnameDataset;
-
-                        Picasso.get().load(uri).fetch(new Callback() {
-                            @Override
-                            public void onSuccess() {
-                                customCallback.onCallback(url);
-                            }
-
-                            @Override
-                            public void onError(Exception e) {
-                                customCallback.onCallback(null);
-                            }
-                        });
-
-                        return;
-                    } else {
-                        if(dataSnapshotLength == 0) {
-                            customCallback.onCallback(null);
-                        }
+                Log.d(TAG, "shoutout mga tuko (SUCCESS): " + uri);
+                final String url = uri.toString();
+                Picasso.get().load(uri).fetch(new Callback() {
+                    @Override
+                    public void onSuccess() {
+                        customCallback.onCallback(url);
                     }
-                }
-            }
 
+                    @Override
+                    public void onError(Exception e) {
+                        customCallback.onCallback(null);
+                    }
+                });
+            }
+        }).addOnFailureListener(new OnFailureListener() {
             @Override
-            public void onCancelled(DatabaseError databaseError) {
-                customCallback.onCallback(null);
+            public void onFailure(@NonNull Exception exception) {
+                // Handle any errors
+                Log.d(TAG, "shoutout mga tuko (ERROR): " + exception);
             }
         });
+
+
+//        databaseReferenceDataset.addListenerForSingleValueEvent(new ValueEventListener() {
+//            @Override
+//            public void onDataChange(DataSnapshot dataSnapshot) {
+//
+//                Log.d(TAG, "shoutout mga tuko (on datachange): " + dataSnapshot);
+//                //int dataSnapshotLength = (int) dataSnapshot.getChildrenCount();
+//
+////                for (DataSnapshot dataset: dataSnapshot.getChildren()) {
+//                    //String drugnameDataset = dataset.child("maclogo").getValue(String.class);
+//                    //dataSnapshotLength--;
+//
+////                    if(drugname.toLowerCase().contains(drugnameDataset.toLowerCase())){
+//                        final String url = dataSnapshot.child("mac").getValue(String.class);
+//                        final Uri uri = Uri.parse(url);
+//                    //Log.d(TAG, "shoutout mga tuko (LOGO): ");
+//                        //label = drugnameDataset;
+//
+//                        Picasso.get().load(uri).fetch(new Callback() {
+//                            @Override
+//                            public void onSuccess() {
+//                                customCallback.onCallback(url);
+//                            }
+//
+//                            @Override
+//                            public void onError(Exception e) {
+//                                customCallback.onCallback(null);
+//                            }
+//                        });
+//
+//                        return;
+////                    } else {
+////                        if(dataSnapshotLength == 0) {
+////                            customCallback.onCallback(null);
+////                        }
+////                    }
+////                }
+//            }
+//
+//            @Override
+//            public void onCancelled(DatabaseError databaseError) {
+//                Log.e(TAG, "shoutout mga tuko (error): " + databaseError);
+//                customCallback.onCallback(null);
+//            }
+//        });
     }
 
     public void authProcess(final Uri datasetUri, final View view) {
         targetDataset = new Target() {
             @Override
             public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                Log.d(TAG, "mga tuko (authProcess) bitmaploaded: ");
                 new ImageProcessing().execute(bitmap);
 
                 pbar.setVisibility(View.GONE);
@@ -635,6 +679,7 @@ public class ImageProcActivity extends AbsRuntimePermission  {
 
             @Override
             public void onBitmapFailed(Exception e, Drawable errorDrawable) {
+                Log.d(TAG, "onBitmapFailed: tuko ");
                 if (selectedImage != null) {
                     auth.setEnabled(true);
                 } else {
