@@ -1,1 +1,8 @@
 # CapstoneProject
+
+
+AuthentiKit: A MAC BULLET LIPSTICK COUNTERFEIT DETECTOR USING DIGITAL IMAGE PROCESSING  WITH WEB-BASED MONITORING SYSTEM
+
+Shann Kirby Locsin
+Joshua Mark Moldez
+Mary Claudewyn Padasas
