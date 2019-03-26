@@ -4,6 +4,7 @@ package com.capstoneproject.capstone;
  */
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -33,6 +34,7 @@ public class SignUpActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getSupportActionBar().hide();
         setContentView(R.layout.activity_signup);
 
         //Get Firebase auth instance
@@ -98,7 +100,7 @@ public class SignUpActivity extends AppCompatActivity {
                                     // the auth state listener will be notified and logic to handle the
                                     // signed in user can be handled in the listener.
 
-                                    startActivity(new Intent(SignUpActivity.this, MainActivity.class));
+                                    startActivity(new Intent(SignUpActivity.this, VerifyEmailActivity.class));
                                     finish();
                                 }else{
                                     if(task.getException() instanceof FirebaseAuthUserCollisionException) {
@@ -106,6 +108,7 @@ public class SignUpActivity extends AppCompatActivity {
                                             toast.cancel();
                                         toast = Toast.makeText(getApplicationContext(), "Email already registered", Toast.LENGTH_SHORT);
                                         toast.show();
+                                        progressBar.setVisibility(View.GONE);
                                     } else {
                                         if(toast != null)
                                             toast.cancel();

@@ -25,23 +25,17 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/filepaths" />
         </provider>
-        <activity android:name=".MainActivity"
-            >
+        <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".ImageProcActivity"
-            android:label="@string/title_activity_login"></activity>
-        <activity
-            android:name=".SignUpActivity"
-            android:label="AuthentiKit"></activity>
-        <activity
-            android:name=".LoginActivity"></activity>
-        <activity
-            android:name=".ResultActivity" android:label="Results"></activity>
+        <activity android:name=".ImageProcActivity"></activity>
+        <activity android:name=".SignUpActivity"></activity>
+        <activity android:name=".LoginActivity"></activity>
+        <activity android:name=".ResultActivity" ></activity>
+        <activity android:name=".VerifyEmailActivity" ></activity>
     </application>
 
 </manifest>
