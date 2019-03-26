@@ -36,6 +36,8 @@
         <activity android:name=".LoginActivity"></activity>
         <activity android:name=".ResultActivity" ></activity>
         <activity android:name=".VerifyEmailActivity" ></activity>
+        <activity android:name=".ResetPasswordActivity" ></activity>
+
     </application>
 
 </manifest>
