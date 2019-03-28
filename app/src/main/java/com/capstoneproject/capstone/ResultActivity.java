@@ -1,8 +1,14 @@
 package com.capstoneproject.capstone;
 
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.ImageView;
@@ -23,17 +29,16 @@ public class ResultActivity extends AppCompatActivity {
     Toast toast;
     ImageView image;
     Bitmap result;
+    private static int ALERT_TIME_OUT=2000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_result);
 
-        firebaseDatabase = FirebaseDatabase.getInstance();
-
-        firebaseStorage = FirebaseStorage.getInstance();
-
-        toast = null;
+//        firebaseDatabase = FirebaseDatabase.getInstance();
+//
+//        firebaseStorage = FirebaseStorage.getInstance();
 
         result = ImageProcActivity.queryImage();
         Bundle extras = getIntent().getExtras();
@@ -50,5 +55,43 @@ public class ResultActivity extends AppCompatActivity {
         image = findViewById(R.id.resultImg);
 
         image.setImageBitmap(result);
+
+        new Handler().
+                postDelayed(new Runnable(){
+            @Override
+            public void run(){
+                if(authenticity.equals("Counterfeit MAC")){
+                    sendReport();
+                }
+            }
+        }, ALERT_TIME_OUT);
+    }
+
+    void sendReport(){
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(ResultActivity.this);
+
+        alertDialogBuilder
+                .setMessage("A counterfeit of MAC Bullet Lipstick was detected. Do you want to report it?")
+                .setCancelable(false)
+                .setPositiveButton("Report",
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(final DialogInterface dialog, int which) {
+                                // insert report here
+                            }
+                        })
+                .setNegativeButton("Cancel",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog,
+                                                int id) {
+                                dialog.cancel();
+                            }
+                        })
+                .setTitle("Warning!")
+                .setIcon(R.drawable.ic_warning_black_24dp);
+        // create alert dialog
+        AlertDialog alertDialog = alertDialogBuilder.create();
+        // show it
+        alertDialog.show();
     }
 }
