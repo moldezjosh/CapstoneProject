@@ -4,15 +4,18 @@ package com.capstoneproject.capstone;
  * Created by moldezjosh on 3/15/2019.
  */
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
+import android.location.LocationListener;
 import android.location.LocationManager;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
@@ -20,9 +23,11 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
@@ -76,7 +81,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class ImageProcActivity extends AbsRuntimePermission  {
+public class ImageProcActivity extends AbsRuntimePermission implements LocationListener {
 
     private static final String TAG = "ImageProcActivity";
     ImageView imgView;
@@ -199,16 +204,15 @@ public class ImageProcActivity extends AbsRuntimePermission  {
 
         //extras.putString("email", user.getEmail());
         extras.putString("authenticity", authenticity);
-//        extras.putStringArray("location", new String[]{String.valueOf(latitude), String.valueOf(longitude)});
+        extras.putStringArray("location", new String[]{String.valueOf(latitude), String.valueOf(longitude)});
         i.putExtras(extras);
-//        getApplicationContext().startActivity(i);
         startActivity(i);
         finish();
 
 
         authenticity = null;
-//        latitude = 0;
-//        longitude = 0;
+        latitude = 0;
+        longitude = 0;
 
     }
 
@@ -272,12 +276,12 @@ public class ImageProcActivity extends AbsRuntimePermission  {
                         selectedImage = BitmapFactory.decodeStream(ims);
 
                         if(selectedImage != null) {
-//                            locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-//                            if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) && !locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-//                                buildAlertMessageNoGps();
-//                            } else {
-//                                getLocation();
-//                            }
+                            locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+                            if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) && !locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                                buildAlertMessageNoGps();
+                            } else {
+                                getLocation();
+                            }
                         }
 
                         imgView.setImageBitmap(selectedImage);
@@ -360,7 +364,6 @@ public class ImageProcActivity extends AbsRuntimePermission  {
                             authProcess(Uri.parse(url), view);
                             Log.d(TAG, "authentikit (getdataset): ");
                         } else {
-                            //ocrDialog(label, view);
                             authProcess(Uri.parse(url), view);
                             Log.d(TAG, "authentikit else (getdataset): ");
                         }
@@ -469,15 +472,7 @@ public class ImageProcActivity extends AbsRuntimePermission  {
             Log.d(TAG, "authentikit i'm here!: ");
 
             try{
-//                capturedMatImg1 = new Mat();
-//                dataMat1 = new Mat();
-//
-//                //Get file from gallery and change to Bitmap
-//                String capImg = "sdcard/fishscale/test.jpg";
 
-
-//                BitmapFactory.Options options = new BitmapFactory.Options();
-//                options.inPreferredConfig = Bitmap.Config.ARGB_8888;
                 sampleBitmap = selectedImage.copy(Bitmap.Config.ARGB_8888, true);
                 //selectedImage = BitmapFactory.decodeFile(mCurrentPhotoPath, options);
                 Utils.bitmapToMat(sampleBitmap, sampleMat);
@@ -488,12 +483,6 @@ public class ImageProcActivity extends AbsRuntimePermission  {
                 }
 
                 //Get dataset1 and change from Bitmap to Mat
-
-                //Bitmap dataset1= BitmapFactory.decodeResource(getResources(),R.drawable.escale);
-//                dataset1 = dataset1.copy(Bitmap.Config.ARGB_8888, true);
-//
-//                if(dataset1 != null){Log.d("Dataset Image 1", "Found");
-//                }
 
                 Utils.bitmapToMat(bitmap, datasetMat);
                 if(bitmap != null){
@@ -513,9 +502,6 @@ public class ImageProcActivity extends AbsRuntimePermission  {
                 detector.detect(datasetMat, datasetKeypoints);
 
                 descExtractor = DescriptorExtractor.create(DescriptorExtractor.ORB);
-
-//                Mat capturedDescriptors = new Mat();
-//                Mat sourceDescriptors = new Mat();
 
                 descExtractor.compute(sampleMat, sampleKeypoints, sampleDescriptors);
                 descExtractor.compute(datasetMat, datasetKeypoints, datasetDescriptors);
@@ -653,12 +639,12 @@ public class ImageProcActivity extends AbsRuntimePermission  {
             }
 
             if (selectedImage != null) {
-//                locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-//                if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) && !locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-//                    buildAlertMessageNoGps();
-//                } else {
-//                    getLocation();
-//                }
+                locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+                if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) && !locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                    buildAlertMessageNoGps();
+                } else {
+                    getLocation();
+                }
 
                 auth.setEnabled(true);
             } else {
@@ -788,4 +774,78 @@ public class ImageProcActivity extends AbsRuntimePermission  {
 
         return image;
     }
+
+    private void getLocation() {
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(ImageProcActivity.this, new String[] {
+                    Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.INTERNET
+            }, 10);
+
+        } else {
+            if(locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+
+                location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+
+                if(location != null) {
+                    latitude = location.getLatitude();
+                    longitude = location.getLongitude();
+                }
+            }
+
+            if(locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) && location == null) {
+
+                location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+
+                if(location != null) {
+                    latitude = location.getLatitude();
+                    longitude = location.getLongitude();
+                }
+            }
+        }
+
+        Log.d(TAG, "getLocation: " + location);
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        Log.d(TAG, "onLocationChanged: " + location);
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+
+    }
+
+    private void buildAlertMessageNoGps() {
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+        builder.setMessage("Please turn on GPS")
+                .setCancelable(false)
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+                    }
+                })
+                .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.cancel();
+                    }
+                });
+        final AlertDialog alert = builder.create();
+        alert.show();
+    }
+
 }

@@ -40,27 +40,15 @@ public class ResultActivity extends AppCompatActivity {
 //        final String label = extras.getString("label");
 //        final String email = extras.getString("email");
         final String authenticity = extras.getString("authenticity");
-       // final String[] location = extras.getStringArray("location");
+        final String[] location = extras.getStringArray("location");
 
-//        TextView textView = findViewById(R.id.information);
-//        textView.setText(label);
-//
-//        TextView locationView = findViewById(R.id.location);
-//        locationView.setText(location[0] + ", " + location[1]);
+        TextView locationView = findViewById(R.id.location);
+        locationView.setText(location[0] + ", " + location[1]);
 
         TextView authRateView = findViewById(R.id.auth_rate);
         authRateView.setText(authenticity);
         image = findViewById(R.id.resultImg);
 
         image.setImageBitmap(result);
-
-//        FloatingActionButton report = findViewById(R.id.report);
-//        report.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                Report res = new Report(location[0], location[1], authenticity, email, null, label);
-//                report(res);
-//            }
-//        });
     }
 }
