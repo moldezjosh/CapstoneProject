@@ -461,93 +461,104 @@ public class ImageProcActivity extends AbsRuntimePermission  {
             //Dataset image
             Bitmap bitmap = bitmaps[0];
 
-            //Newly captured image
-            sampleBitmap = selectedImage.copy(Bitmap.Config.ARGB_8888, true);
+            List<DMatch> matchList;
+            List<DMatch> matches_final;
+            MatOfDMatch matches_final_mat;
+            List<DMatch> finalMatchesList = new ArrayList<>();
 
-            Log.d(TAG, "authentikit captured image (bitmap): " + sampleBitmap);
+            Log.d(TAG, "authentikit i'm here!: ");
 
-            //Newly captured image preprocessing, image binarization
-            Utils.bitmapToMat(sampleBitmap, sampleMat);
-            Imgproc.cvtColor(sampleMat, sampleMat, Imgproc.COLOR_RGB2GRAY);
-            Imgproc.adaptiveThreshold(sampleMat, sampleMat, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 11, 2);
-            Imgproc.GaussianBlur(sampleMat, sampleMat, new Size(5,5), 0);
-            Imgproc.threshold(sampleMat, sampleMat, 0, 255, Imgproc.THRESH_BINARY + Imgproc.THRESH_OTSU);
-
-            //Dataset image preprocessing, image binarization
-            Utils.bitmapToMat(bitmap, datasetMat);
-            Imgproc.cvtColor(datasetMat, datasetMat, Imgproc.COLOR_RGB2GRAY);
-            Imgproc.adaptiveThreshold(datasetMat, datasetMat, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 11, 2);
-            Imgproc.GaussianBlur(datasetMat, datasetMat, new Size(5,5), 0);
-            Imgproc.threshold(datasetMat, datasetMat, 0, 255, Imgproc.THRESH_BINARY + Imgproc.THRESH_OTSU);
-
-            Log.d(TAG, "authentikit dataset (bitmap): " + bitmap);
-
-            //initializing feature detector and descriptor
-            detector = FeatureDetector.create(FeatureDetector.ORB);
-            descExtractor = DescriptorExtractor.create(DescriptorExtractor.ORB);
-
-            //initializing feature matcher
-            matcher = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE_HAMMING);
-
-            //detecting stable image keypoints
-            detector.detect(sampleMat, sampleKeypoints);
-            detector.detect(datasetMat, datasetKeypoints);
-
-            //Describe keypoints, extract distinct image features
-            descExtractor.compute(sampleMat, sampleKeypoints, sampleDescriptors);
-            descExtractor.compute(datasetMat, datasetKeypoints, datasetDescriptors);
-
-            //Matching extracted features
-            matcher.match(datasetDescriptors, sampleDescriptors, matches);
-            List<DMatch> matchList = matches.toList();
-            ArrayList<DMatch> finalMatch = new ArrayList<>();
-            double threshold = 70;
-
-            //Method for finding best matches
-            for (int a = 0; a < matchList.size(); a++) {
-                if(matchList.get(a).distance <= threshold) {
-                    finalMatch.add(matches.toList().get(a));
-                }
-            }
-            MatOfDMatch finalMatchMat = new MatOfDMatch();
-            finalMatchMat.fromList(finalMatch);
-            List<DMatch> finalMatchList = finalMatchMat.toList();
-            double intGMatch = finalMatchList.size();
-            double fMatchAve = 0;
-            for (int a = 0; a < intGMatch; a++) {
-                fMatchAve = fMatchAve + finalMatchList.get(a).distance;
-            }
-            fMatchAve = fMatchAve/intGMatch;
-
-            Log.d(TAG, "authentikit - fMatchAve: " + fMatchAve);
-            Log.d(TAG, "authentikit - inGMatch: " + intGMatch);
-
-            if(fMatchAve < 62) {
-                authenticity = "Authentic product";
-            } else {
-                authenticity = "Counterfeit product";
-            }
-
-
-
-
-
-
-
-
-
-
-           /// -------------------------------------------------------------------------
-
-//            //Dataset image
-//            Bitmap bitmap = bitmaps[0];
+            try{
+//                capturedMatImg1 = new Mat();
+//                dataMat1 = new Mat();
 //
+//                //Get file from gallery and change to Bitmap
+//                String capImg = "sdcard/fishscale/test.jpg";
+
+
+//                BitmapFactory.Options options = new BitmapFactory.Options();
+//                options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+                sampleBitmap = selectedImage.copy(Bitmap.Config.ARGB_8888, true);
+                //selectedImage = BitmapFactory.decodeFile(mCurrentPhotoPath, options);
+                Utils.bitmapToMat(sampleBitmap, sampleMat);
+                Log.d(TAG, "authentikit i'm here!2222: ");
+
+                if(sampleMat != null){
+                    Log.d("Captured Image Mat 1", "Found authentikit ");
+                }
+
+                //Get dataset1 and change from Bitmap to Mat
+
+                //Bitmap dataset1= BitmapFactory.decodeResource(getResources(),R.drawable.escale);
+//                dataset1 = dataset1.copy(Bitmap.Config.ARGB_8888, true);
+//
+//                if(dataset1 != null){Log.d("Dataset Image 1", "Found");
+//                }
+
+                Utils.bitmapToMat(bitmap, datasetMat);
+                if(bitmap != null){
+                    Log.d("Dataset Image Mat 1", "Found authentikit ");
+                }
+
+                Imgproc.cvtColor(sampleMat, sampleMat, Imgproc.COLOR_BGR2RGB);
+                Imgproc.cvtColor(datasetMat, datasetMat, Imgproc.COLOR_BGR2RGB);
+
+                detector = FeatureDetector.create(FeatureDetector.ORB);
+
+                //MatOfKeyPoint capturedkeypoints = new MatOfKeyPoint();
+
+                detector.detect(sampleMat, sampleKeypoints);
+                //MatOfKeyPoint keypoints = new MatOfKeyPoint();
+
+                detector.detect(datasetMat, datasetKeypoints);
+
+                descExtractor = DescriptorExtractor.create(DescriptorExtractor.ORB);
+
+//                Mat capturedDescriptors = new Mat();
+//                Mat sourceDescriptors = new Mat();
+
+                descExtractor.compute(sampleMat, sampleKeypoints, sampleDescriptors);
+                descExtractor.compute(datasetMat, datasetKeypoints, datasetDescriptors);
+
+                matcher = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE_HAMMING);
+
+               // matches = new MatOfDMatch();
+                matcher.match(sampleDescriptors,datasetDescriptors,matches);
+
+                matchList = matches.toList();
+                matches_final = new ArrayList<>();
+
+                double threshold = 70;
+
+                for(int i = 0; i < matchList.size(); i++){
+                    if(matchList.get(i).distance <= threshold){
+                        matches_final.add(matches.toList().get(i));
+                    }
+                }
+
+                matches_final_mat = new MatOfDMatch();
+                matches_final_mat.fromList(matches_final);
+                finalMatchesList = matches_final_mat.toList();
+            }
+            catch(Exception e){
+                e.printStackTrace();
+            }
+
+            Log.d(TAG, "authentikit - FS Matches size 1: " + String.valueOf(finalMatchesList.size()));
+            Log.d("FS Matches size 1", String.valueOf(finalMatchesList.size()));
+
+            if(finalMatchesList.size()<200){
+                authenticity = "Counterfeit MAC";
+            } else {
+                authenticity = "Authentic MAC";
+            }
+
+            // -----------------------------------------------------------------------------------
+
 //            //Newly captured image
 //            sampleBitmap = selectedImage.copy(Bitmap.Config.ARGB_8888, true);
 //
-//            Log.d(TAG, "authentikit - captured Image: " + sampleBitmap);
-//
-//            publishProgress("Images Preprocessing");
+//            Log.d(TAG, "authentikit captured image (bitmap): " + sampleBitmap);
 //
 //            //Newly captured image preprocessing, image binarization
 //            Utils.bitmapToMat(sampleBitmap, sampleMat);
@@ -563,7 +574,7 @@ public class ImageProcActivity extends AbsRuntimePermission  {
 //            Imgproc.GaussianBlur(datasetMat, datasetMat, new Size(5,5), 0);
 //            Imgproc.threshold(datasetMat, datasetMat, 0, 255, Imgproc.THRESH_BINARY + Imgproc.THRESH_OTSU);
 //
-//            Log.d(TAG, "authentikit - Dataset: " + bitmap);
+//            Log.d(TAG, "authentikit dataset (bitmap): " + bitmap);
 //
 //            //initializing feature detector and descriptor
 //            detector = FeatureDetector.create(FeatureDetector.ORB);
@@ -571,8 +582,6 @@ public class ImageProcActivity extends AbsRuntimePermission  {
 //
 //            //initializing feature matcher
 //            matcher = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE_HAMMING);
-//
-//            publishProgress("Scanning for stable image features");
 //
 //            //detecting stable image keypoints
 //            detector.detect(sampleMat, sampleKeypoints);
@@ -582,11 +591,8 @@ public class ImageProcActivity extends AbsRuntimePermission  {
 //            descExtractor.compute(sampleMat, sampleKeypoints, sampleDescriptors);
 //            descExtractor.compute(datasetMat, datasetKeypoints, datasetDescriptors);
 //
-//            publishProgress("Matching");
-//
 //            //Matching extracted features
 //            matcher.match(datasetDescriptors, sampleDescriptors, matches);
-//
 //            List<DMatch> matchList = matches.toList();
 //            ArrayList<DMatch> finalMatch = new ArrayList<>();
 //
@@ -598,11 +604,9 @@ public class ImageProcActivity extends AbsRuntimePermission  {
 //                    finalMatch.add(matches.toList().get(a));
 //                }
 //            }
-//
 //            MatOfDMatch finalMatchMat = new MatOfDMatch();
 //            finalMatchMat.fromList(finalMatch);
 //            List<DMatch> finalMatchList = finalMatchMat.toList();
-//
 //            double intGMatch = finalMatchList.size();
 //            double fMatchAve = 0;
 //
@@ -610,11 +614,12 @@ public class ImageProcActivity extends AbsRuntimePermission  {
 //                fMatchAve = fMatchAve + finalMatchList.get(a).distance;
 //            }
 //
+//            Log.d(TAG, "authentikit (bdivide) - fMatchAve: " + fMatchAve);
+//
 //            fMatchAve = fMatchAve/intGMatch;
 //
 //            Log.d(TAG, "authentikit - fMatchAve: " + fMatchAve);
 //            Log.d(TAG, "authentikit - inGMatch: " + intGMatch);
-//
 //
 //            if(intGMatch <= 60) {
 //                return false;
@@ -678,7 +683,7 @@ public class ImageProcActivity extends AbsRuntimePermission  {
         //databaseReferenceDataset = firebaseDatabase.getReference("datasets");
         Log.d(TAG, "authentikit (dataset): ");
 
-        storageRef.child("datasets/mac/maccover.jpg").getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+        storageRef.child("datasets/mac/maclogo.jpg").getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
             @Override
             public void onSuccess(Uri uri) {
                 // Got the download URL for 'datasets/mac/maclogo.jpg'
@@ -705,52 +710,6 @@ public class ImageProcActivity extends AbsRuntimePermission  {
                 Log.d(TAG, "authentikit (ERROR): " + exception);
             }
         });
-
-
-//        databaseReferenceDataset.addListenerForSingleValueEvent(new ValueEventListener() {
-//            @Override
-//            public void onDataChange(DataSnapshot dataSnapshot) {
-//
-//                Log.d(TAG, "shoutout mga tuko (on datachange): " + dataSnapshot);
-//                //int dataSnapshotLength = (int) dataSnapshot.getChildrenCount();
-//
-////                for (DataSnapshot dataset: dataSnapshot.getChildren()) {
-//                    //String drugnameDataset = dataset.child("maclogo").getValue(String.class);
-//                    //dataSnapshotLength--;
-//
-////                    if(drugname.toLowerCase().contains(drugnameDataset.toLowerCase())){
-//                        final String url = dataSnapshot.child("mac").getValue(String.class);
-//                        final Uri uri = Uri.parse(url);
-//                    //Log.d(TAG, "shoutout mga tuko (LOGO): ");
-//                        //label = drugnameDataset;
-//
-//                        Picasso.get().load(uri).fetch(new Callback() {
-//                            @Override
-//                            public void onSuccess() {
-//                                customCallback.onCallback(url);
-//                            }
-//
-//                            @Override
-//                            public void onError(Exception e) {
-//                                customCallback.onCallback(null);
-//                            }
-//                        });
-//
-//                        return;
-////                    } else {
-////                        if(dataSnapshotLength == 0) {
-////                            customCallback.onCallback(null);
-////                        }
-////                    }
-////                }
-//            }
-//
-//            @Override
-//            public void onCancelled(DatabaseError databaseError) {
-//                Log.e(TAG, "shoutout mga tuko (error): " + databaseError);
-//                customCallback.onCallback(null);
-//            }
-//        });
     }
 
     public void authProcess(final Uri datasetUri, final View view) {
