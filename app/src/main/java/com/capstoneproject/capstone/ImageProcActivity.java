@@ -133,6 +133,9 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_imageproc);
 
+        //Get Firebase auth instance
+        mAuth = FirebaseAuth.getInstance();
+
         storage = FirebaseStorage.getInstance();
         firebaseDatabase = FirebaseDatabase.getInstance();
         storageRef = storage.getReference();
@@ -198,11 +201,11 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
         }
     }
     private void resultView() {
-//        FirebaseUser user = mAuth.getCurrentUser();
+        FirebaseUser user = mAuth.getCurrentUser();
         Intent i = new Intent(ImageProcActivity.this, ResultActivity.class);
         Bundle extras = new Bundle();
 
-        //extras.putString("email", user.getEmail());
+        extras.putString("email", user.getEmail());
         extras.putString("authenticity", authenticity);
         extras.putStringArray("location", new String[]{String.valueOf(latitude), String.valueOf(longitude)});
         i.putExtras(extras);
@@ -757,7 +760,7 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
         // Create an image file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String imageFileName = "JPEG_" + timeStamp;
-        File storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "MAC");
+        File storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "AuthentiKit");
 
 
         if(!storageDir.exists()){

@@ -41,8 +41,8 @@ public class LoginActivity extends AppCompatActivity {
 
         if (auth.getCurrentUser() != null) {
             FirebaseAuth.getInstance().signOut();
-//            startActivity(new Intent(LoginActivity.this, MainActivity.class));
-//            finish();
+            startActivity(new Intent(LoginActivity.this, MainActivity.class));
+            finish();
         }
 
         // set the view now
