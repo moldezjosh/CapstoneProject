@@ -2,11 +2,13 @@ package com.capstoneproject.capstone;
 
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.location.Address;
 import android.location.Geocoder;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -67,9 +69,6 @@ public class ReportActivity extends AppCompatActivity {
         inputproduct = findViewById(R.id.product);
         inputdetail = findViewById(R.id.detail_spin);
 
-        locationtype = inlocationtype.getSelectedItem().toString();
-        detail = inputdetail.getSelectedItem().toString();
-
         location = extras.getStringArray("location");
         email = extras.getString("email");
 
@@ -92,6 +91,8 @@ public class ReportActivity extends AppCompatActivity {
         submitBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                locationtype = inlocationtype.getSelectedItem().toString();
+                detail = inputdetail.getSelectedItem().toString();
                 Report rep = new Report(inlocation, location[0], location[1], locationtype, inproduct, detail, email, null);
                 sendReport(rep);
             }
@@ -121,7 +122,7 @@ public class ReportActivity extends AppCompatActivity {
                 data.setUrl(url);
                 progressDialog.dismiss();
                 databaseReferenceReport.child(primaryKey).setValue(data);
-                
+                returnHome();
             }
         })
                 .addOnFailureListener(new OnFailureListener() {
@@ -177,5 +178,28 @@ public class ReportActivity extends AppCompatActivity {
         String address = addresses.get(0).getAddressLine(0);
 
         return address;
+    }
+
+    private void returnHome(){
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(ReportActivity.this);
+
+        alertDialogBuilder
+                .setMessage("The counterfeit MAC Bullet Lipstick was reported successfully.")
+                .setCancelable(false)
+                .setPositiveButton("OK",
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(final DialogInterface dialog, int which) {
+                                Intent i = new Intent(ReportActivity.this, ImageProcActivity.class);
+                                startActivity(i);
+                                finish();
+                            }
+                        })
+                .setTitle("Done!")
+                .setIcon(R.drawable.ic_done_black_24dp);
+        // create alert dialog
+        AlertDialog alertDialog = alertDialogBuilder.create();
+        // show it
+        alertDialog.show();
     }
 }
