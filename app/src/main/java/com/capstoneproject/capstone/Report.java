@@ -7,16 +7,29 @@ package com.capstoneproject.capstone;
 public class Report {
     private String Latitude;
     private String Longitude;
-    private String Authenticity;
     private String Email;
     private String Url;
+    private String LocationType;
+    private String Location;
+    private String Detail;
+    private String Product;
 
-    public Report(String latitude, String longitude, String authenticity, String email, String url) {
+    public Report(String location, String latitude, String longitude, String locationType, String product, String detail, String email, String url) {
+        Location = location;
         Latitude = latitude;
         Longitude = longitude;
-        Authenticity = authenticity;
+        LocationType = locationType;
+        Product = product;
+        Detail = detail;
         Email = email;
         Url = url;
+    }
+    public String getLocation() {
+        return Location;
+    }
+
+    public void setLocation(String location) {
+        Location = location;
     }
 
     public String getLatitude() {
@@ -35,12 +48,28 @@ public class Report {
         Longitude = longitude;
     }
 
-    public String getAuthenticity() {
-        return Authenticity;
+    public String getLocationType() {
+        return LocationType;
     }
 
-    public void setAuthenticity(String authenticity) {
-        Authenticity = authenticity;
+    public void setLocationType(String locationType) {
+        LocationType = locationType;
+    }
+
+    public String getProduct() {
+        return Product;
+    }
+
+    public void setProduct(String product) {
+        Product = product;
+    }
+
+    public String getDetail() {
+        return Detail;
+    }
+
+    public void setDetail(String detail) {
+        Detail = detail;
     }
 
     public String getEmail() {

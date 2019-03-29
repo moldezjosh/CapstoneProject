@@ -47,4 +47,18 @@
     <string name="btn_reload">Reload</string>
     <string name="resend">If you did not received any email, Resend verification email.</string>
 
+    <string name="location_prompt">Type of Location</string>
+
+    <string-array name="location_arrays">
+        <item>Independent Boutique</item>
+        <item>Unauthorized Retailer</item>
+    </string-array>
+
+    <string name="detail_prompt">Type of Location</string>
+
+    <string-array name="detail_arrays">
+        <item>MAC Logo</item>
+        <item>MAC Bottom Sticker</item>
+    </string-array>
+
 </resources>

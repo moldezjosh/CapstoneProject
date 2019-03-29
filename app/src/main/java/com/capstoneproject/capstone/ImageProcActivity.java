@@ -133,6 +133,9 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_imageproc);
 
+        //Get Firebase auth instance
+        mAuth = FirebaseAuth.getInstance();
+
         storage = FirebaseStorage.getInstance();
         firebaseDatabase = FirebaseDatabase.getInstance();
         storageRef = storage.getReference();
@@ -198,11 +201,11 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
         }
     }
     private void resultView() {
-//        FirebaseUser user = mAuth.getCurrentUser();
+        FirebaseUser user = mAuth.getCurrentUser();
         Intent i = new Intent(ImageProcActivity.this, ResultActivity.class);
         Bundle extras = new Bundle();
 
-        //extras.putString("email", user.getEmail());
+        extras.putString("email", user.getEmail());
         extras.putString("authenticity", authenticity);
         extras.putStringArray("location", new String[]{String.valueOf(latitude), String.valueOf(longitude)});
         i.putExtras(extras);
