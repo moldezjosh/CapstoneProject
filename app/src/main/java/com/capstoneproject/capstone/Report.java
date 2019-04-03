@@ -13,8 +13,9 @@ public class Report {
     private String Location;
     private String Detail;
     private String Product;
+    private String DateReported;
 
-    public Report(String location, String latitude, String longitude, String locationType, String product, String detail, String email, String url) {
+    public Report(String location, String latitude, String longitude, String locationType, String product, String detail, String email, String dateReported, String url) {
         Location = location;
         Latitude = latitude;
         Longitude = longitude;
@@ -22,6 +23,7 @@ public class Report {
         Product = product;
         Detail = detail;
         Email = email;
+        DateReported = dateReported;
         Url = url;
     }
     public String getLocation() {
@@ -78,6 +80,14 @@ public class Report {
 
     public void setEmail(String email) {
         Email = email;
+    }
+
+    public String getDateReported() {
+        return DateReported;
+    }
+
+    public void setDateReported(String dateReported) {
+        DateReported = dateReported;
     }
 
     public String getUrl() {
