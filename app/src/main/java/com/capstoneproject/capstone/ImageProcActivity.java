@@ -377,8 +377,8 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
 
         @Override
         protected View doInBackground(View... strings) {
-            progressDialog.setMessage("Recognizing labels");
-            //label = labelRecognition();
+//            progressDialog.setMessage("Recognizing labels");
+//            //label = labelRecognition();
             return strings[0];
         }
     }

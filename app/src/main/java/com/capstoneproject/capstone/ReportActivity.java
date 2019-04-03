@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.location.Address;
 import android.location.Geocoder;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AlertDialog;
@@ -19,6 +20,7 @@ import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -31,6 +33,7 @@ import com.google.firebase.storage.UploadTask;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Locale;
 
@@ -48,7 +51,7 @@ public class ReportActivity extends AppCompatActivity {
     Toast toast;
     EditText inputlocation, inputproduct;
     Spinner inlocationtype, inputdetail;
-    String locationtype, detail, email, inlocation, inproduct;
+    String locationtype, detail, email, inlocation, inproduct, dateReported;
     String[] location;
     Button submitBtn;
 
@@ -71,6 +74,7 @@ public class ReportActivity extends AppCompatActivity {
 
         location = extras.getStringArray("location");
         email = extras.getString("email");
+        dateReported = getCurrentTS();
 
         String loc;
         try {
@@ -93,7 +97,7 @@ public class ReportActivity extends AppCompatActivity {
             public void onClick(View v) {
                 locationtype = inlocationtype.getSelectedItem().toString();
                 detail = inputdetail.getSelectedItem().toString();
-                Report rep = new Report(inlocation, location[0], location[1], locationtype, inproduct, detail, email, null);
+                Report rep = new Report(inlocation, location[0], location[1], locationtype, inproduct, detail, email, dateReported, null);
                 sendReport(rep);
             }
         });
@@ -118,8 +122,10 @@ public class ReportActivity extends AppCompatActivity {
         uploadTask.addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
             @Override
             public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                String url = taskSnapshot.getMetadata().toString();
-                data.setUrl(url);
+                Task<Uri> uri = taskSnapshot.getStorage().getDownloadUrl();
+                while(!uri.isComplete());
+                Uri url = uri.getResult();
+                data.setUrl(url.toString());
                 progressDialog.dismiss();
                 databaseReferenceReport.child(primaryKey).setValue(data);
                 returnHome();
@@ -201,5 +207,10 @@ public class ReportActivity extends AppCompatActivity {
         AlertDialog alertDialog = alertDialogBuilder.create();
         // show it
         alertDialog.show();
+    }
+
+    private String getCurrentTS(){
+        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+        return timestamp.toString();
     }
 }
