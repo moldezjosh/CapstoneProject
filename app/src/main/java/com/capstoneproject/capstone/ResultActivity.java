@@ -61,6 +61,10 @@ public class ResultActivity extends AppCompatActivity {
         authRateView.setText(authenticity);
         image = findViewById(R.id.resultImg);
 
+        final String matchResult = extras.getString("result");
+        TextView info = findViewById(R.id.information);
+        info.setText(matchResult);
+
         image.setImageBitmap(result);
 
         new Handler().
