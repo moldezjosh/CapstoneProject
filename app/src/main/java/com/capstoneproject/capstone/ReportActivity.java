@@ -196,7 +196,7 @@ public class ReportActivity extends AppCompatActivity {
                         new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(final DialogInterface dialog, int which) {
-                                Intent i = new Intent(ReportActivity.this, ImageProcActivity.class);
+                                Intent i = new Intent(ReportActivity.this, HomeActivity.class);
                                 startActivity(i);
                                 finish();
                             }

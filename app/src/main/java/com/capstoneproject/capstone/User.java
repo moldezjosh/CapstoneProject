@@ -1,5 +1,9 @@
 package com.capstoneproject.capstone;
 
+/**
+ * Created by moldezjosh on 4/09/2019.
+ */
+
 public class User {
     private String Email;
     private String Role;

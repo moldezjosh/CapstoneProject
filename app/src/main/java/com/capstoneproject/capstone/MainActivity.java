@@ -29,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run(){
                 if(user != null) {
-                    Intent i = new Intent(MainActivity.this,ImageProcActivity.class);
+                    Intent i = new Intent(MainActivity.this, HomeActivity.class);
                     startActivity(i);
                     finish();
                 } else {

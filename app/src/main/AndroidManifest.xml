@@ -40,6 +40,7 @@
         <activity android:name=".VerifyEmailActivity" ></activity>
         <activity android:name=".ResetPasswordActivity" ></activity>
         <activity android:name=".ReportActivity" ></activity>
+        <activity android:name=".HomeActivity"></activity>
 
     </application>
 
