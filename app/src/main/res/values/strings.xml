@@ -48,6 +48,7 @@
     <string name="resend">If you did not received any email, Resend verification email.</string>
     <string name="select">Select which part of the lipstick you wish to capture</string>
     <string name="location_prompt">Type of Location</string>
+    <string name="btn_home">Back to Home</string>
 
     <string-array name="location_arrays">
         <item>Independent Boutique</item>

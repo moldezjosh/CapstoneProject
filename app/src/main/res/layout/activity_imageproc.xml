@@ -30,10 +30,5 @@
         android:layout_gravity="bottom|center"
         android:layout_margin="@dimen/fab_margin"
         android:adjustViewBounds="false"
-        app:backgroundTint="@android:color/holo_orange_light"
-        app:srcCompat="?android:attr/textCheckMark" />
-
-
-
-
+        app:srcCompat="@drawable/button" />
 </android.support.design.widget.CoordinatorLayout>

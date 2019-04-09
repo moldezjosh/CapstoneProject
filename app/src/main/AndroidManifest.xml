@@ -36,7 +36,8 @@
         <activity android:name=".ImageProcActivity"></activity>
         <activity android:name=".SignUpActivity"></activity>
         <activity android:name=".LoginActivity"></activity>
-        <activity android:name=".ResultActivity" ></activity>
+        <activity android:name=".ResultActivity"
+            android:label="Result"></activity>
         <activity android:name=".VerifyEmailActivity" ></activity>
         <activity android:name=".ResetPasswordActivity" ></activity>
         <activity android:name=".ReportActivity" ></activity>

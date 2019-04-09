@@ -5,6 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    android:background="@color/colorPrimary"
     tools:context=".ResultActivity">
 
     <ImageView
@@ -44,7 +45,8 @@
                 android:text="TextView"
                 android:textSize="@dimen/fab_margin"
                 tools:layout_editor_absoluteX="16dp"
-                tools:layout_editor_absoluteY="300dp" />
+                tools:layout_editor_absoluteY="300dp"
+                android:textColor="@color/white"/>
 
             <TextView
                 android:id="@+id/textView6"
@@ -54,7 +56,8 @@
                 android:paddingRight="@dimen/fab_margin"
                 android:text="Result"
                 android:textSize="18sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:textColor="@color/white"/>
 
             <TextView
                 android:id="@+id/auth_rate"
@@ -62,26 +65,17 @@
                 android:layout_height="wrap_content"
                 android:padding="@dimen/fab_margin"
                 android:text="TextView"
-                android:textSize="@dimen/fab_margin" />
+                android:textSize="30dp"
+                android:textColor="@color/white"/>
 
-            <TextView
-                android:id="@+id/textView4"
-                android:layout_width="match_parent"
+            <Button
+                android:id="@+id/btn_home"
+                android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:paddingLeft="@dimen/fab_margin"
-                android:paddingRight="@dimen/fab_margin"
-                android:text="Location"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/location"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="@dimen/fab_margin"
-                android:text="TextView"
-                android:textSize="@dimen/fab_margin" />
-
+                android:layout_marginTop="20dip"
+                android:background="@color/colorAccent"
+                android:text="@string/btn_home"
+                android:textColor="@android:color/white" />
         </LinearLayout>
     </ScrollView>
 
