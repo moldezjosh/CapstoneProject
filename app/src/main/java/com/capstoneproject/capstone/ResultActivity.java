@@ -4,6 +4,7 @@ import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -14,6 +15,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -39,6 +41,7 @@ import java.io.ByteArrayOutputStream;
 public class ResultActivity extends AppCompatActivity {
     private static String TAG = "ResultActivity";
     ImageView image;
+    Button btnHome;
     Bitmap result;
     private static int ALERT_TIME_OUT=3000;
 
@@ -51,21 +54,38 @@ public class ResultActivity extends AppCompatActivity {
         result = ImageProcActivity.queryImage();
         final Bundle extras = getIntent().getExtras();
 
-        //final String email = extras.getString("email");
-        final String authenticity = extras.getString("authenticity");
-        final String[] location = extras.getStringArray("location");
-        TextView locationView = findViewById(R.id.location);
-        locationView.setText(location[0] + ", " + location[1]);
 
+        final String authenticity = extras.getString("authenticity");
         TextView authRateView = findViewById(R.id.auth_rate);
         authRateView.setText(authenticity);
+
+        if(authenticity.equals("Authentic MAC")){
+            authRateView.setTextColor(Color.GREEN);
+        }else if(authenticity.equals("Counterfeit MAC")){
+            authRateView.setTextColor(Color.RED);
+        }else{
+            authRateView.setText("Not a MAC Bullet Lipstick");
+            authRateView.setTextColor(Color.WHITE);
+        }
+
+
         image = findViewById(R.id.resultImg);
 
+        //match result
         final String matchResult = extras.getString("result");
         TextView info = findViewById(R.id.information);
         info.setText(matchResult);
 
         image.setImageBitmap(result);
+
+        btnHome = findViewById(R.id.btn_home);
+        btnHome.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(ResultActivity.this, HomeActivity.class));
+                finish();
+            }
+        });
 
         new Handler().
                 postDelayed(new Runnable(){

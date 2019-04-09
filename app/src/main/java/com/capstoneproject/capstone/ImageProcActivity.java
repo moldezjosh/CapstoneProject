@@ -134,6 +134,7 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getSupportActionBar().hide();
         setContentView(R.layout.activity_imageproc);
 
         //Get Firebase auth instance
@@ -523,9 +524,16 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
 
             matchResult = String.valueOf(finalMatchesList.size());
 
+//            if(finalMatchesList.size()>=300){
+//                authenticity = "Counterfeit MAC";
+//            } else if(finalMatchesList.size()>=200) {
+//                authenticity = "Authentic MAC";
+//            }else if(finalMatchesList.size()<200) {
+//                authenticity = "Not";
+//            }
             if(finalMatchesList.size()<200){
                 authenticity = "Counterfeit MAC";
-            } else {
+            }else{
                 authenticity = "Authentic MAC";
             }
 
