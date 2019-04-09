@@ -92,7 +92,7 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
     Mat Rgba, imgGray, sampleMat, datasetMat, graySampleMat, grayDatasetMat, sampleDescriptors, datasetDescriptors;
     Toast toast;
     FeatureDetector detector;
-    private String mCurrentPhotoPath = null, authenticity;
+    private String mCurrentPhotoPath = null, authenticity, matchResult;
     private static final int REQUEST_PERMISSION = 10;
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -208,6 +208,7 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
         extras.putString("email", user.getEmail());
         extras.putString("authenticity", authenticity);
         extras.putStringArray("location", new String[]{String.valueOf(latitude), String.valueOf(longitude)});
+        extras.putString("result", matchResult);
         i.putExtras(extras);
         startActivity(i);
         finish();
@@ -216,6 +217,7 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
         authenticity = null;
         latitude = 0;
         longitude = 0;
+        matchResult = null;
 
     }
 
@@ -535,6 +537,8 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
 
             Log.d(TAG, "authentikit - FS Matches size 1: " + String.valueOf(finalMatchesList.size()));
             Log.d("FS Matches size 1", String.valueOf(finalMatchesList.size()));
+
+            matchResult = String.valueOf(finalMatchesList.size());
 
             if(finalMatchesList.size()<200){
                 authenticity = "Counterfeit MAC";
