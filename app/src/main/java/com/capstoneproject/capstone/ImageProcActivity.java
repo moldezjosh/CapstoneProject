@@ -34,12 +34,15 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -88,12 +91,12 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
     Integer REQUEST_CAMERA = 1, SELECT_FILE = 0;
     private static Bitmap selectedImage, result, sampleBitmap, datasetBitmap;
     ProgressBar pbar;
-    FloatingActionButton fab, auth;
+    FloatingActionButton auth;
+    Button btnSignOut;
     Mat Rgba, imgGray, sampleMat, datasetMat, graySampleMat, grayDatasetMat, sampleDescriptors, datasetDescriptors;
     Toast toast;
     FeatureDetector detector;
     private String mCurrentPhotoPath = null, authenticity, matchResult;
-    private static final int REQUEST_PERMISSION = 10;
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
@@ -158,6 +161,18 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
                 }
             }
         });
+
+
+        btnSignOut = findViewById(R.id.btn_sign_out);
+        btnSignOut.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mAuth.signOut();
+                startActivity(new Intent(ImageProcActivity.this, LoginActivity.class));
+                finish();
+            }
+        });
+
 
 //        FirebaseConnectionStatus firebaseConnectionStatus = new FirebaseConnectionStatus(getApplicationContext(), toast);
 //        firebaseConnectionStatus.connectionStatus();
@@ -226,44 +241,28 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
     }
 
     private void captureImage() {
-        final CharSequence[] items = {"Camera", "Cancel"};
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Capture Image");
-        builder.setItems(items, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                if(items[which].equals("Camera")) {
-                    //reqPermission();
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 
-                    Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        // Ensure that there's a camera activity to handle the intent
+        if (intent.resolveActivity(getPackageManager()) != null) {
 
-                    // Ensure that there's a camera activity to handle the intent
-                    if (intent.resolveActivity(getPackageManager()) != null) {
-
-                        // Create the File where the photo should go
-                        File photoFile = null;
-                        try {
-                            photoFile = createImageFile();
-                        } catch (IOException ex) {
-                            // Error occurred while creating the File
-                            ex.printStackTrace();
-                        }
-
-                        // Continue only if the File was successfully created
-                        if (photoFile != null) {
-                            Uri photoURI = FileProvider.getUriForFile(ImageProcActivity.this, BuildConfig.APPLICATION_ID + ".provider", photoFile);
-                            intent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
-                            startActivityForResult (intent, REQUEST_CAMERA);
-                        }
-                    }
-                } else if(items[which].equals("Cancel")) {
-                    dialog.dismiss();
-                }
+            // Create the File where the photo should go
+            File photoFile = null;
+            try {
+                photoFile = createImageFile();
+            } catch (IOException ex) {
+                // Error occurred while creating the File
+                ex.printStackTrace();
             }
-        });
 
-        builder.show();
+            // Continue only if the File was successfully created
+            if (photoFile != null) {
+                Uri photoURI = FileProvider.getUriForFile(ImageProcActivity.this, BuildConfig.APPLICATION_ID + ".provider", photoFile);
+                intent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
+                startActivityForResult (intent, REQUEST_CAMERA);
+            }
+        }
     }
 
     @Override
@@ -336,7 +335,7 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
+//        //noinspection SimplifiableIfStatement
 //        if (id == R.id.action_settings) {
 //            return true;
 //        } else if (id == R.id.action_sign_out) {

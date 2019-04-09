@@ -21,6 +21,12 @@ import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.UserProfileChangeRequest;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 
 public class SignUpActivity extends AppCompatActivity {
@@ -28,6 +34,8 @@ public class SignUpActivity extends AppCompatActivity {
     private Button btnSignIn, btnSignUp, btnResetPassword;
     private ProgressBar progressBar;
     private FirebaseAuth auth;
+    private FirebaseDatabase firebaseDatabase;
+    private DatabaseReference databaseReferenceUserInfo;
     private Toast toast;
 
 
@@ -39,6 +47,8 @@ public class SignUpActivity extends AppCompatActivity {
 
         //Get Firebase auth instance
         auth = FirebaseAuth.getInstance();
+
+        firebaseDatabase = FirebaseDatabase.getInstance();
 
 
 
@@ -67,7 +77,7 @@ public class SignUpActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 
-                String email = inputEmail.getText().toString().trim();
+                final String email = inputEmail.getText().toString().trim();
                 String password = inputPassword.getText().toString().trim();
 
                 if (TextUtils.isEmpty(email)) {
@@ -96,9 +106,26 @@ public class SignUpActivity extends AppCompatActivity {
                                     progressBar.setVisibility(View.GONE);
                                     final FirebaseUser user = task.getResult().getUser();
                                     user.sendEmailVerification();
+
+                                    final User user_count = new User(email, "user");
                                     // If sign in fails, display a message to the user. If sign in succeeds
                                     // the auth state listener will be notified and logic to handle the
                                     // signed in user can be handled in the listener.
+
+                                    UserProfileChangeRequest profile = new UserProfileChangeRequest.Builder().setDisplayName(email).build();
+                                    user.updateProfile(profile).addOnCompleteListener(new OnCompleteListener<Void>() {
+                                        @Override
+                                        public void onComplete(@NonNull Task<Void> task) {
+                                            if(task.isSuccessful()) {
+                                                userRole(user.getUid(), user_count);
+                                            } else {
+                                                if(toast != null)
+                                                    toast.cancel();
+                                                toast = Toast.makeText(getApplicationContext(), task.getException().getMessage(), Toast.LENGTH_SHORT);
+                                                toast.show();
+                                            }
+                                        }
+                                    });
 
                                     startActivity(new Intent(SignUpActivity.this, VerifyEmailActivity.class));
                                     finish();
@@ -127,6 +154,24 @@ public class SignUpActivity extends AppCompatActivity {
                             }
                         });
 
+            }
+        });
+    }
+
+    private void userRole(String uid, User user_count) {
+        databaseReferenceUserInfo = firebaseDatabase.getReference("user_count");
+        databaseReferenceUserInfo.child(uid).setValue(user_count);
+        databaseReferenceUserInfo.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                toast.cancel();
+                toast = Toast.makeText(getApplicationContext(), "Failed to read value.", Toast.LENGTH_SHORT);
+                toast.show();
             }
         });
     }
