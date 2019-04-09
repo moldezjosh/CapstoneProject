@@ -163,26 +163,10 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
         });
 
 
-        btnSignOut = findViewById(R.id.btn_sign_out);
-        btnSignOut.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mAuth.signOut();
-                startActivity(new Intent(ImageProcActivity.this, LoginActivity.class));
-                finish();
-            }
-        });
-
-
 //        FirebaseConnectionStatus firebaseConnectionStatus = new FirebaseConnectionStatus(getApplicationContext(), toast);
 //        firebaseConnectionStatus.connectionStatus();
 
     }
-
-//    private void reqPermission() {
-//        requestAppPermissions(new String[] {Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA, Manifest.permission.INTERNET, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION},
-//                R.string.msg,REQUEST_PERMISSION);
-//    }
 
     @Override
     public void onPermissionsGranted(int requestCode) {

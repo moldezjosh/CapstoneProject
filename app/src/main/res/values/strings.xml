@@ -46,7 +46,7 @@
     <string name="verify_content">We already have sent your verification email to your email address. Tap reload to continue login. </string>
     <string name="btn_reload">Reload</string>
     <string name="resend">If you did not received any email, Resend verification email.</string>
-
+    <string name="select">Select which part of the lipstick you wish to capture</string>
     <string name="location_prompt">Type of Location</string>
 
     <string-array name="location_arrays">
@@ -60,5 +60,9 @@
         <item>MAC Logo</item>
         <item>MAC Bottom Sticker</item>
     </string-array>
+
+    <string name="mac_logo">MAC Logo</string>
+    <string name="mac_sticker">MAC Bottom Sticker</string>
+
 
 </resources>
