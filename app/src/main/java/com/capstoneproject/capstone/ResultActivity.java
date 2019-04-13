@@ -64,8 +64,9 @@ public class ResultActivity extends AppCompatActivity {
         }else if(authenticity.equals("Counterfeit MAC")){
             authRateView.setTextColor(Color.RED);
         }else{
-            authRateView.setText("Not a MAC Bullet Lipstick");
+            authRateView.setText("Not a MAC Bullet Lipstick/Logo was not captured.");
             authRateView.setTextColor(Color.WHITE);
+            authRateView.setTextSize(16);
         }
 
 

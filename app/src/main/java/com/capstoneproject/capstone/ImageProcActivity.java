@@ -89,6 +89,7 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
     private static final String TAG = "ImageProcActivity";
     ImageView imgView;
     Integer REQUEST_CAMERA = 1, SELECT_FILE = 0;
+    String dataset;
     private static Bitmap selectedImage, result, sampleBitmap, datasetBitmap;
     ProgressBar pbar;
     FloatingActionButton auth;
@@ -145,6 +146,9 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
         storageRef = storage.getReference();
         context = this;
 
+        Bundle extras = getIntent().getExtras();
+        dataset = extras.getString("dataset");
+
         captureImage();
         imgView = findViewById(R.id.imgView);
         pbar = findViewById(R.id.progressBar);
@@ -163,17 +167,10 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
             }
         });
 
-
-//        FirebaseConnectionStatus firebaseConnectionStatus = new FirebaseConnectionStatus(getApplicationContext(), toast);
-//        firebaseConnectionStatus.connectionStatus();
-
     }
 
     @Override
-    public void onPermissionsGranted(int requestCode) {
-//        toast = Toast.makeText(getApplicationContext(), "Permission Granted", Toast.LENGTH_LONG);
-//        toast.show();
-    }
+    public void onPermissionsGranted(int requestCode) { }
 
     @Override
     protected void onResume() {
@@ -289,8 +286,6 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
                                 new ImageLoaderClass().execute(path);
                                 }
                             });
-
-
                 }
             }
         } else {
@@ -308,8 +303,6 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        //getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
 
@@ -319,13 +312,6 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-
-//        //noinspection SimplifiableIfStatement
-//        if (id == R.id.action_settings) {
-//            return true;
-//        } else if (id == R.id.action_sign_out) {
-//            mAuth.signOut();
-//        }
 
         return super.onOptionsItemSelected(item);
     }
@@ -345,16 +331,13 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
             super.onPostExecute(view);
             progressDialog.dismiss();
 
-
                 hasDataset(new CustomCallback() {
                     @Override
                     public void onCallback(String url) {
                         if(url != null) {
                             authProcess(Uri.parse(url), view);
-                            Log.d(TAG, "authentikit (getdataset): ");
                         } else {
                             authProcess(Uri.parse(url), view);
-                            Log.d(TAG, "authentikit else (getdataset): ");
                         }
                     }
                 });
@@ -363,8 +346,6 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
 
         @Override
         protected View doInBackground(View... strings) {
-//            progressDialog.setMessage("Recognizing labels");
-//            //label = labelRecognition();
             return strings[0];
         }
     }
@@ -458,14 +439,10 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
             MatOfDMatch matches_final_mat;
             List<DMatch> finalMatchesList = new ArrayList<>();
 
-            Log.d(TAG, "authentikit i'm here!: ");
-
             try{
 
                 sampleBitmap = selectedImage.copy(Bitmap.Config.ARGB_8888, true);
-                //selectedImage = BitmapFactory.decodeFile(mCurrentPhotoPath, options);
                 Utils.bitmapToMat(sampleBitmap, sampleMat);
-                Log.d(TAG, "authentikit i'm here!2222: ");
 
                 if(sampleMat != null){
                     Log.d("Captured Image Mat 1", "Found authentikit ");
@@ -524,97 +501,25 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
 
             matchResult = String.valueOf(finalMatchesList.size());
 
-//            if(finalMatchesList.size()>=300){
-//                authenticity = "Counterfeit MAC";
-//            } else if(finalMatchesList.size()>=200) {
-//                authenticity = "Authentic MAC";
-//            }else if(finalMatchesList.size()<200) {
-//                authenticity = "Not";
-//            }
-            if(finalMatchesList.size()<200){
-                authenticity = "Counterfeit MAC";
-            }else{
-                authenticity = "Authentic MAC";
+            int matchR = finalMatchesList.size();
+
+            if(dataset.equals("maclogo")){
+                if(matchR>=400){
+                    authenticity = "Counterfeit MAC";
+                } else if(matchR>=300 && matchR<399) {
+                    authenticity = "Authentic MAC";
+                }else if(matchR<300) {
+                    authenticity = "Not";
+                }
+            }else if(dataset.equals("macsticker")){
+                if(matchR>=300){
+                    authenticity = "Counterfeit MAC";
+                } else if(matchR>=200 && matchR<299) {
+                    authenticity = "Authentic MAC";
+                }else if(matchR<200) {
+                    authenticity = "Not";
+                }
             }
-
-            // -----------------------------------------------------------------------------------
-
-//            //Newly captured image
-//            sampleBitmap = selectedImage.copy(Bitmap.Config.ARGB_8888, true);
-//
-//            Log.d(TAG, "authentikit captured image (bitmap): " + sampleBitmap);
-//
-//            //Newly captured image preprocessing, image binarization
-//            Utils.bitmapToMat(sampleBitmap, sampleMat);
-//            Imgproc.cvtColor(sampleMat, sampleMat, Imgproc.COLOR_RGB2GRAY);
-//            Imgproc.adaptiveThreshold(sampleMat, sampleMat, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 11, 2);
-//            Imgproc.GaussianBlur(sampleMat, sampleMat, new Size(5,5), 0);
-//            Imgproc.threshold(sampleMat, sampleMat, 0, 255, Imgproc.THRESH_BINARY + Imgproc.THRESH_OTSU);
-//
-//            //Dataset image preprocessing, image binarization
-//            Utils.bitmapToMat(bitmap, datasetMat);
-//            Imgproc.cvtColor(datasetMat, datasetMat, Imgproc.COLOR_RGB2GRAY);
-//            Imgproc.adaptiveThreshold(datasetMat, datasetMat, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 11, 2);
-//            Imgproc.GaussianBlur(datasetMat, datasetMat, new Size(5,5), 0);
-//            Imgproc.threshold(datasetMat, datasetMat, 0, 255, Imgproc.THRESH_BINARY + Imgproc.THRESH_OTSU);
-//
-//            Log.d(TAG, "authentikit dataset (bitmap): " + bitmap);
-//
-//            //initializing feature detector and descriptor
-//            detector = FeatureDetector.create(FeatureDetector.ORB);
-//            descExtractor = DescriptorExtractor.create(DescriptorExtractor.ORB);
-//
-//            //initializing feature matcher
-//            matcher = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE_HAMMING);
-//
-//            //detecting stable image keypoints
-//            detector.detect(sampleMat, sampleKeypoints);
-//            detector.detect(datasetMat, datasetKeypoints);
-//
-//            //Describe keypoints, extract distinct image features
-//            descExtractor.compute(sampleMat, sampleKeypoints, sampleDescriptors);
-//            descExtractor.compute(datasetMat, datasetKeypoints, datasetDescriptors);
-//
-//            //Matching extracted features
-//            matcher.match(datasetDescriptors, sampleDescriptors, matches);
-//            List<DMatch> matchList = matches.toList();
-//            ArrayList<DMatch> finalMatch = new ArrayList<>();
-//
-//            double threshold = 70;
-//
-//            //Method for finding best matches
-//            for (int a = 0; a < matchList.size(); a++) {
-//                if(matchList.get(a).distance <= threshold) {
-//                    finalMatch.add(matches.toList().get(a));
-//                }
-//            }
-//            MatOfDMatch finalMatchMat = new MatOfDMatch();
-//            finalMatchMat.fromList(finalMatch);
-//            List<DMatch> finalMatchList = finalMatchMat.toList();
-//            double intGMatch = finalMatchList.size();
-//            double fMatchAve = 0;
-//
-//            for (int a = 0; a < intGMatch; a++) {
-//                fMatchAve = fMatchAve + finalMatchList.get(a).distance;
-//            }
-//
-//            Log.d(TAG, "authentikit (bdivide) - fMatchAve: " + fMatchAve);
-//
-//            fMatchAve = fMatchAve/intGMatch;
-//
-//            Log.d(TAG, "authentikit - fMatchAve: " + fMatchAve);
-//            Log.d(TAG, "authentikit - inGMatch: " + intGMatch);
-//
-//            if(intGMatch <= 60) {
-//                return false;
-//            } else {
-//                if(fMatchAve >= 65) {
-//                    authenticity = "Counterfeit MAC";
-//                } else {
-//                    authenticity = "Authentic MAC";
-//                }
-//            }
-
             return true;
         }
     }
@@ -623,8 +528,6 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-
-//            pbar.setVisibility(View.VISIBLE);
         }
 
         @Override
@@ -633,7 +536,6 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
 
             if(bitmap != null) {
                 imgView.setImageBitmap(bitmap);
-                //pbar.setVisibility(View.GONE);
             }
 
             if (selectedImage != null) {
@@ -664,14 +566,11 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
     }
 
     private void hasDataset(final CustomCallback customCallback) {
-        //databaseReferenceDataset = firebaseDatabase.getReference("datasets");
-        Log.d(TAG, "authentikit (dataset): ");
-
-        storageRef.child("datasets/mac/maclogo.jpg").getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+        String datasetURL = "datasets/mac/"+dataset+".jpg";
+        storageRef.child(datasetURL).getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
             @Override
             public void onSuccess(Uri uri) {
                 // Got the download URL for 'datasets/mac/maclogo.jpg'
-                //final Uri uri = Uri.parse(url);
 
                 Log.d(TAG, "authentikit (SUCCESS): " + uri);
                 final String url = uri.toString();
@@ -700,11 +599,7 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
         targetDataset = new Target() {
             @Override
             public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                Log.d(TAG, "authentikit (authProcess) bitmaploaded: ");
-                Log.d(TAG, "authentikit bitmaploaded (bitmap): " + bitmap);
                 new ImageProcessing().execute(bitmap);
-
-
 
                 pbar.setVisibility(View.GONE);
 
@@ -717,7 +612,6 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
 
             @Override
             public void onBitmapFailed(Exception e, Drawable errorDrawable) {
-                Log.d(TAG, "onBitmapFailed: authentikit ");
                 if (selectedImage != null) {
                     auth.setEnabled(true);
                 } else {
@@ -811,19 +705,13 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
     }
 
     @Override
-    public void onStatusChanged(String provider, int status, Bundle extras) {
-
-    }
+    public void onStatusChanged(String provider, int status, Bundle extras) { }
 
     @Override
-    public void onProviderEnabled(String provider) {
-
-    }
+    public void onProviderEnabled(String provider) { }
 
     @Override
-    public void onProviderDisabled(String provider) {
-
-    }
+    public void onProviderDisabled(String provider) { }
 
     private void buildAlertMessageNoGps() {
         final AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -845,5 +733,4 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
         final AlertDialog alert = builder.create();
         alert.show();
     }
-
 }
