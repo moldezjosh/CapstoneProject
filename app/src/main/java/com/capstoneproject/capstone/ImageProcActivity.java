@@ -31,6 +31,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -39,17 +40,15 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
+import com.google.android.gms.vision.Frame;
+import com.google.android.gms.vision.text.TextBlock;
+import com.google.android.gms.vision.text.TextRecognizer;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.squareup.picasso.Callback;
@@ -62,6 +61,7 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 //import org.opencv.core.DMatch;
+import org.opencv.core.CvException;
 import org.opencv.core.DMatch;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDMatch;
@@ -77,6 +77,7 @@ import org.opencv.imgproc.Imgproc;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
@@ -89,15 +90,12 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
     private static final String TAG = "ImageProcActivity";
     ImageView imgView;
     Integer REQUEST_CAMERA = 1, SELECT_FILE = 0;
-    String dataset;
-    private static Bitmap selectedImage, result, sampleBitmap, datasetBitmap;
+    private static Bitmap selectedImage, result, sampleBitmap, datasetBitmap, bmp;
     ProgressBar pbar;
     FloatingActionButton auth;
-    Button btnSignOut;
     Mat Rgba, imgGray, sampleMat, datasetMat, graySampleMat, grayDatasetMat, sampleDescriptors, datasetDescriptors;
-    Toast toast;
     FeatureDetector detector;
-    private String mCurrentPhotoPath = null, authenticity, matchResult;
+    private String mCurrentPhotoPath = null, authenticity, matchResult, dataset, fAuth, tempAuth;
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
@@ -123,12 +121,9 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
     private static Location location;
     private double latitude, longitude;
     private FirebaseAuth mAuth;
-    private FirebaseAuth.AuthStateListener mAuthListener;
     private FirebaseDatabase firebaseDatabase;
-    private DatabaseReference databaseReferenceDataset;
     private StorageReference storageRef;
     private FirebaseStorage storage;
-    private DatabaseReference connectedRef;
     Target targetDataset;
 
 
@@ -148,6 +143,10 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
 
         Bundle extras = getIntent().getExtras();
         dataset = extras.getString("dataset");
+        if(extras.getString("auth")!=null){
+            fAuth = extras.getString("auth");
+        }
+
 
         captureImage();
         imgView = findViewById(R.id.imgView);
@@ -159,7 +158,8 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
             @Override
             public void onClick(final View view) {
                 if (selectedImage != null) {
-                    new GetDataset().execute(view);
+                    textRecognizer();
+                    //new GetDataset().execute(view);
                 } else {
                     Snackbar.make(view, "Please add image", Snackbar.LENGTH_SHORT)
                             .setAction("Action", null).show();
@@ -415,7 +415,8 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
             progressDialog.dismiss();
 
             if(aBoolean) {
-                resultView();
+                //resultView();
+                //secondTest();
             } else {
                 Toast.makeText(getApplicationContext(), "Query image is not qualified to continue the process. Try another one.", Toast.LENGTH_SHORT).show();
             }
@@ -433,93 +434,111 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
 
             //Dataset image
             Bitmap bitmap = bitmaps[0];
+           //bmp = Bitmap.createBitmap(200, 100, Bitmap.Config.ARGB_8888);
 
-            List<DMatch> matchList;
-            List<DMatch> matches_final;
-            MatOfDMatch matches_final_mat;
-            List<DMatch> finalMatchesList = new ArrayList<>();
+            //Newly captured image
+            sampleBitmap = selectedImage.copy(Bitmap.Config.ARGB_8888, true);
 
-            try{
+            publishProgress("Images Preprocessing");
 
-                sampleBitmap = selectedImage.copy(Bitmap.Config.ARGB_8888, true);
-                Utils.bitmapToMat(sampleBitmap, sampleMat);
+            //Newly captured image preprocessing, image binarization
+            Utils.bitmapToMat(sampleBitmap, sampleMat);
+            Imgproc.cvtColor(sampleMat, sampleMat, Imgproc.COLOR_RGB2GRAY);
+            Imgproc.adaptiveThreshold(sampleMat, sampleMat, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 11, 2);
+            Imgproc.GaussianBlur(sampleMat, sampleMat, new Size(5,5), 0);
+            Imgproc.threshold(sampleMat, sampleMat, 0, 255, Imgproc.THRESH_BINARY + Imgproc.THRESH_OTSU);
 
-                if(sampleMat != null){
-                    Log.d("Captured Image Mat 1", "Found authentikit ");
-                }
-
-                //Get dataset1 and change from Bitmap to Mat
-
-                Utils.bitmapToMat(bitmap, datasetMat);
-                if(bitmap != null){
-                    Log.d("Dataset Image Mat 1", "Found authentikit ");
-                }
-
-                Imgproc.cvtColor(sampleMat, sampleMat, Imgproc.COLOR_BGR2RGB);
-                Imgproc.cvtColor(datasetMat, datasetMat, Imgproc.COLOR_BGR2RGB);
-
-                detector = FeatureDetector.create(FeatureDetector.ORB);
-
-                //MatOfKeyPoint capturedkeypoints = new MatOfKeyPoint();
-
-                detector.detect(sampleMat, sampleKeypoints);
-                //MatOfKeyPoint keypoints = new MatOfKeyPoint();
-
-                detector.detect(datasetMat, datasetKeypoints);
-
-                descExtractor = DescriptorExtractor.create(DescriptorExtractor.ORB);
-
-                descExtractor.compute(sampleMat, sampleKeypoints, sampleDescriptors);
-                descExtractor.compute(datasetMat, datasetKeypoints, datasetDescriptors);
-
-                matcher = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE_HAMMING);
-
-               // matches = new MatOfDMatch();
-                matcher.match(sampleDescriptors,datasetDescriptors,matches);
-
-                matchList = matches.toList();
-                matches_final = new ArrayList<>();
-
-                double threshold = 70;
-
-                for(int i = 0; i < matchList.size(); i++){
-                    if(matchList.get(i).distance <= threshold){
-                        matches_final.add(matches.toList().get(i));
-                    }
-                }
-
-                matches_final_mat = new MatOfDMatch();
-                matches_final_mat.fromList(matches_final);
-                finalMatchesList = matches_final_mat.toList();
+            try {
+                bmp = Bitmap.createBitmap(sampleMat.cols(), sampleMat.rows(), Bitmap.Config.ARGB_8888);
+                Utils.matToBitmap(sampleMat, bmp);
             }
-            catch(Exception e){
+            catch (CvException e){Log.d("Exception",e.getMessage());}
+
+            //imgView.setImageBitmap(bmp);
+
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+            //String root = Environment.getExternalStorageDirectory().toString();
+            File myDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "AuthentiKit");
+            myDir.mkdirs();
+            String fname = "Image-"+timeStamp+".jpg";
+            File file = new File(myDir, fname);
+            if (file.exists()) file.delete();
+            //Log.i("LOAD", root + fname);
+            try {
+                FileOutputStream out = new FileOutputStream(file);
+                bmp.compress(Bitmap.CompressFormat.JPEG, 90, out);
+                out.flush();
+                out.close();
+            } catch (Exception e) {
                 e.printStackTrace();
             }
 
-            Log.d(TAG, "authentikit - FS Matches size 1: " + String.valueOf(finalMatchesList.size()));
-            Log.d("FS Matches size 1", String.valueOf(finalMatchesList.size()));
+            //Dataset image preprocessing, image binarization
+            Utils.bitmapToMat(bitmap, datasetMat);
+            Imgproc.cvtColor(datasetMat, datasetMat, Imgproc.COLOR_RGB2GRAY);
+            Imgproc.adaptiveThreshold(datasetMat, datasetMat, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 11, 2);
+            Imgproc.GaussianBlur(datasetMat, datasetMat, new Size(5,5), 0);
+            Imgproc.threshold(datasetMat, datasetMat, 0, 255, Imgproc.THRESH_BINARY + Imgproc.THRESH_OTSU);
 
-            matchResult = String.valueOf(finalMatchesList.size());
 
-            int matchR = finalMatchesList.size();
+            //initializing feature detector and descriptor
+            detector = FeatureDetector.create(FeatureDetector.ORB);
+            descExtractor = DescriptorExtractor.create(DescriptorExtractor.ORB);
 
-            if(dataset.equals("maclogo")){
-                if(matchR>=400){
-                    authenticity = "Counterfeit MAC";
-                } else if(matchR>=300 && matchR<399) {
-                    authenticity = "Authentic MAC";
-                }else if(matchR<300) {
-                    authenticity = "Not";
-                }
-            }else if(dataset.equals("macsticker")){
-                if(matchR>=300){
-                    authenticity = "Counterfeit MAC";
-                } else if(matchR>=200 && matchR<299) {
-                    authenticity = "Authentic MAC";
-                }else if(matchR<200) {
-                    authenticity = "Not";
+            //initializing feature matcher
+            matcher = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE_HAMMING);
+
+            publishProgress("Scanning for stable image features");
+
+            //detecting stable image keypoints
+            detector.detect(sampleMat, sampleKeypoints);
+            detector.detect(datasetMat, datasetKeypoints);
+
+            //Describe keypoints, extract distinct image features
+            descExtractor.compute(sampleMat, sampleKeypoints, sampleDescriptors);
+            descExtractor.compute(datasetMat, datasetKeypoints, datasetDescriptors);
+
+            publishProgress("Matching");
+
+            //Matching extracted features
+            matcher.match(datasetDescriptors, sampleDescriptors, matches);
+
+            List<DMatch> matchList = matches.toList();
+            ArrayList<DMatch> finalMatch = new ArrayList<>();
+
+            double threshold = 70;
+
+            //Method for finding best matches
+            for (int a = 0; a < matchList.size(); a++) {
+                if(matchList.get(a).distance <= threshold) {
+                    finalMatch.add(matches.toList().get(a));
                 }
             }
+
+            MatOfDMatch finalMatchMat = new MatOfDMatch();
+            finalMatchMat.fromList(finalMatch);
+            List<DMatch> finalMatchList = finalMatchMat.toList();
+
+            Log.d(TAG, "authentikit - finalMatchList: " + String.valueOf(finalMatchList.size()));
+
+            double intGMatch = finalMatchList.size();
+            double fMatchAve = 0;
+
+            for (int a = 0; a < intGMatch; a++) {
+                fMatchAve = fMatchAve + finalMatchList.get(a).distance;
+            }
+
+            fMatchAve = fMatchAve/intGMatch;
+
+
+                if(fMatchAve >= 65) {
+                    authenticity = "Authentic MAC";
+                } else {
+                    authenticity = "Counterfeit MAC";
+                }
+
+            Log.d(TAG, "authentikit - fMatchAve: " + String.valueOf(fMatchAve));
+                
             return true;
         }
     }
@@ -567,6 +586,12 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
 
     private void hasDataset(final CustomCallback customCallback) {
         String datasetURL = "datasets/mac/"+dataset+".jpg";
+//        if(noOfTest.equals("1")){
+//            datasetURL = "datasets/mac/maclogo.jpg";
+//        }else{
+//            datasetURL = "datasets/mac/maccount.jpg";
+//        }
+
         storageRef.child(datasetURL).getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
             @Override
             public void onSuccess(Uri uri) {
@@ -732,5 +757,99 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
                 });
         final AlertDialog alert = builder.create();
         alert.show();
+    }
+
+    private void secondTest(){
+//        if(noOfTest.equals("1")){
+//            noOfTest = "2";
+//            new GetDataset();
+//        }else{
+//
+////            if(firstResult>secondResult){
+////                authenticity = "Counterfeit MAC";
+////            }else{
+////                authenticity = "Authentic MAC";
+////            }
+//
+//            int diff = firstResult-secondResult;
+//            if(diff<50){
+//                authenticity = "Counterfeit MAC";
+//            }else{
+//                authenticity = "Authentic MAC";
+//            }
+//
+//            resultView();
+//        }
+
+        if(dataset.equals("macstick")){
+            dataset = "maclogo";
+            Intent i = new Intent(ImageProcActivity.this, ImageProcActivity.class);
+            Bundle extras = new Bundle();
+            extras.putString("dataset", dataset);
+            extras.putString("auth", tempAuth);
+            i.putExtras(extras);
+            startActivity(i);
+            finish();
+        }else{
+            if(fAuth.equals(tempAuth)){
+                authenticity = tempAuth;
+            }else{
+                authenticity = "Counterfeit MAC";
+            }
+
+            resultView();
+        }
+
+    }
+
+    public void textRecognizer(){
+//        //Text Recognition using Mobile Vision API developed by Google
+//        Bitmap bitmapOcr = selectedImage.copy(Bitmap.Config.ARGB_8888, true);
+//        TextRecognizer textRecognizer = new TextRecognizer.Builder(getApplicationContext()).build();
+//
+//        if(!textRecognizer.isOperational()) {
+//            Toast.makeText(getApplicationContext(),"Could not get text",Toast.LENGTH_LONG);
+//        }else{
+//
+//            //selected image used to extract character or text
+//
+//            Frame frame = new Frame.Builder().setBitmap(bitmapOcr).build();
+//            SparseArray<TextBlock> items = textRecognizer.detect(frame);
+//            StringBuilder sb = new StringBuilder();
+//
+//            for(int i = 0; i < items.size(); ++i) {
+//                TextBlock tb = items.valueAt(i);
+//                sb.append(tb.getValue());
+//                sb.append("\n");
+//            }
+//
+//            Toast.makeText(getApplicationContext(),sb.toString(),Toast.LENGTH_LONG).show();
+//        }
+        //Text Recognition using Mobile Vision API developed by Google
+        TextRecognizer textRecognizer = new TextRecognizer.Builder(getApplicationContext()).build();
+        StringBuilder stringBuilder = null;
+        Mat matOcr = new Mat();
+
+        if(textRecognizer.isOperational()) {
+            //selected image used to extract character or text
+            Bitmap bitmapOcr = selectedImage.copy(Bitmap.Config.ARGB_8888, true);
+
+            //Converting acquired image to gray
+            Utils.bitmapToMat(bitmapOcr, matOcr);
+            Imgproc.cvtColor(matOcr, matOcr, Imgproc.COLOR_RGB2GRAY);
+            Utils.matToBitmap(matOcr, bitmapOcr);
+
+            Frame frame = new Frame.Builder().setBitmap(bitmapOcr).build();
+            SparseArray<TextBlock> items = textRecognizer.detect(frame);
+            stringBuilder = new StringBuilder();
+
+            for(int a = 0; a < items.size(); a++) {
+                TextBlock textBlock = items.valueAt(a);
+                stringBuilder.append(textBlock.getValue());
+                stringBuilder.append(" ");
+            }
+            Toast.makeText(getApplicationContext(),stringBuilder.toString(),Toast.LENGTH_LONG).show();
+        }
+
     }
 }

@@ -16,7 +16,7 @@ import com.google.firebase.auth.FirebaseAuth;
 
 public class HomeActivity extends AppCompatActivity {
     Button btnSignOut, btnLogo, btnSticker;
-    String dataset;
+    String testNum, dataset;
 
     private FirebaseAuth mAuth;
 
@@ -47,6 +47,7 @@ public class HomeActivity extends AppCompatActivity {
         btnLogo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                //testNum = "1";
                 dataset = "maclogo";
 
                 Intent i = new Intent(HomeActivity.this, ImageProcActivity.class);
@@ -61,7 +62,7 @@ public class HomeActivity extends AppCompatActivity {
         btnSticker.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                dataset = "macsticker";
+                dataset = "macstick";
 
                 Intent i = new Intent(HomeActivity.this, ImageProcActivity.class);
                 Bundle extras = new Bundle();
