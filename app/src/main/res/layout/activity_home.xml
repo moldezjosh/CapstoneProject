@@ -32,21 +32,12 @@
             android:layout_marginBottom="10dp"/>
 
         <Button
-            android:id="@+id/btn_mac_logo"
+            android:id="@+id/btn_capture"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dip"
             android:background="@color/colorAccent"
-            android:text="@string/mac_logo"
-            android:textColor="@android:color/white" />
-
-        <Button
-            android:id="@+id/btn_bottom_sticker"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dip"
-            android:background="@color/colorAccent"
-            android:text="@string/mac_sticker"
+            android:text="@string/btn_capture"
             android:textColor="@android:color/white" />
 
         <Button

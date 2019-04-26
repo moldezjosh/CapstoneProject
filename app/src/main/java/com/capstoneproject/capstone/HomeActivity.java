@@ -15,8 +15,8 @@ import android.widget.Button;
 import com.google.firebase.auth.FirebaseAuth;
 
 public class HomeActivity extends AppCompatActivity {
-    Button btnSignOut, btnLogo, btnSticker;
-    String testNum, dataset;
+    Button btnSignOut, btnLogo;
+    String testNum;
 
     private FirebaseAuth mAuth;
 
@@ -29,8 +29,7 @@ public class HomeActivity extends AppCompatActivity {
         //Get Firebase auth instance
         mAuth = FirebaseAuth.getInstance();
 
-        btnLogo = findViewById(R.id.btn_mac_logo);
-        btnSticker = findViewById(R.id.btn_bottom_sticker);
+        btnLogo = findViewById(R.id.btn_capture);
         btnSignOut = findViewById(R.id.btn_sign_out);
 
 
@@ -47,26 +46,11 @@ public class HomeActivity extends AppCompatActivity {
         btnLogo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //testNum = "1";
-                dataset = "maclogo";
+                testNum = "1";
 
                 Intent i = new Intent(HomeActivity.this, ImageProcActivity.class);
                 Bundle extras = new Bundle();
-                extras.putString("dataset", dataset);
-                i.putExtras(extras);
-                startActivity(i);
-                finish();
-            }
-        });
-
-        btnSticker.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                dataset = "macstick";
-
-                Intent i = new Intent(HomeActivity.this, ImageProcActivity.class);
-                Bundle extras = new Bundle();
-                extras.putString("dataset", dataset);
+                extras.putString("testNum", testNum);
                 i.putExtras(extras);
                 startActivity(i);
                 finish();

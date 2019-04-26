@@ -42,6 +42,8 @@
         <activity android:name=".ResetPasswordActivity" ></activity>
         <activity android:name=".ReportActivity" ></activity>
         <activity android:name=".HomeActivity"></activity>
+        <activity android:name="com.yalantis.ucrop.UCropActivity"
+            android:theme="@style/AppTheme.NoActionBar"/>
 
         <meta-data
             android:name="com.google.android.gms.vision.DEPENDENCIES"
