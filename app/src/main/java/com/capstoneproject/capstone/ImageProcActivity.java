@@ -47,14 +47,20 @@ import com.google.android.gms.vision.text.TextBlock;
 import com.google.android.gms.vision.text.TextRecognizer;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
+import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.MemoryPolicy;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
+import com.yalantis.ucrop.UCrop;
+import com.yalantis.ucrop.util.FileUtils;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -95,7 +101,9 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
     FloatingActionButton auth;
     Mat Rgba, imgGray, sampleMat, datasetMat, graySampleMat, grayDatasetMat, sampleDescriptors, datasetDescriptors;
     FeatureDetector detector;
-    private String mCurrentPhotoPath = null, authenticity, matchResult, dataset, fAuth, tempAuth;
+    private String mCurrentPhotoPath = null, authenticity, matchResult, dataset, fAuth, label, tempAuth, finishVal, shadesVal, testNum;
+    private String[] finish = {"amplified","matte"};
+    Boolean isFake = true, isDone= false, flag=false;
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
@@ -124,6 +132,7 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
     private FirebaseDatabase firebaseDatabase;
     private StorageReference storageRef;
     private FirebaseStorage storage;
+    private DatabaseReference databaseReferenceDataset;
     Target targetDataset;
 
 
@@ -142,9 +151,9 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
         context = this;
 
         Bundle extras = getIntent().getExtras();
-        dataset = extras.getString("dataset");
-        if(extras.getString("auth")!=null){
-            fAuth = extras.getString("auth");
+        testNum = extras.getString("testNum");
+        if(extras.getString("dataset")!=null){
+            dataset = extras.getString("dataset");
         }
 
 
@@ -158,14 +167,42 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
             @Override
             public void onClick(final View view) {
                 if (selectedImage != null) {
-                    textRecognizer();
-                    //new GetDataset().execute(view);
+
+                    if(testNum.equals("1")){
+                        label = textRecognizer();
+
+
+                        for(int i=0;i<finish.length;i++){
+                            if(label.contains(finish[i])){
+                                flag = true;
+                            }
+                        }
+
+                        if(!flag){
+                            Toast.makeText(getApplicationContext(),"Counterfeit MAC Lipstick",Toast.LENGTH_LONG).show();
+                            Log.d(TAG, "authentikit Counterfeit MAC Lipstick");
+                            authenticity = "Counterfeit MAC";
+                            resultView();
+                        }
+
+                        for(int i=0;i<finish.length;i++){
+                            if(label.contains(finish[i])){
+                                finishVal = finish[i];
+                                Toast.makeText(getApplicationContext(),"finish: " + finishVal,Toast.LENGTH_LONG).show();
+
+                                getShade(finishVal);
+                            }
+                        }
+                    }else{
+                        new GetDataset().execute(view);
+                    }
                 } else {
                     Snackbar.make(view, "Please add image", Snackbar.LENGTH_SHORT)
                             .setAction("Action", null).show();
                 }
             }
         });
+
 
     }
 
@@ -247,6 +284,8 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
         }
     }
 
+
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -256,36 +295,7 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
                 if(mCurrentPhotoPath != null) {
                     Uri imageUri = Uri.parse(mCurrentPhotoPath);
                     File file = new File(imageUri.getPath());
-
-                    try {
-                        InputStream ims = new FileInputStream(file);
-                        selectedImage = BitmapFactory.decodeStream(ims);
-
-                        if(selectedImage != null) {
-                            locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-                            if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) && !locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                                buildAlertMessageNoGps();
-                            } else {
-                                getLocation();
-                            }
-                        }
-
-                        imgView.setImageBitmap(selectedImage);
-                        mCurrentPhotoPath = null;
-                    } catch (FileNotFoundException e) {
-                        return;
-                    }
-
-                    // ScanFile so it will be appeared on Gallery
-                    MediaScannerConnection.scanFile(ImageProcActivity.this,
-                            new String[]{imageUri.getPath()}, null,
-                            new MediaScannerConnection.OnScanCompletedListener() {
-                                public void onScanCompleted(String path, Uri uri) {
-                                    Log.d(TAG, "onScanCompleted: " + path + " - " + uri);
-                                    //load image in background
-                                new ImageLoaderClass().execute(path);
-                                }
-                            });
+                    openCropActivity(imageUri, imageUri);
                 }
             }
         } else {
@@ -299,6 +309,42 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
                 }
             }
         }
+
+        if (requestCode == UCrop.REQUEST_CROP && resultCode == RESULT_OK) {
+            Uri uri = UCrop.getOutput(data);
+            showImage(uri);
+        }
+    }
+
+    private void openCropActivity(Uri sourceUri, Uri destinationUri) {
+        UCrop.of(sourceUri, destinationUri)
+                .withMaxResultSize(500, 500)
+                .withAspectRatio(2f, 1f)
+                .start(this);
+    }
+
+    private void showImage(Uri imageUri) {
+        File file = new File(imageUri.getPath());
+
+        try {
+            InputStream ims = new FileInputStream(file);
+            selectedImage = BitmapFactory.decodeStream(ims);
+
+            imgView.setImageBitmap(selectedImage);
+            mCurrentPhotoPath = null;
+        } catch (FileNotFoundException e) {
+            return;
+        }
+
+        MediaScannerConnection.scanFile(ImageProcActivity.this,
+                new String[]{imageUri.getPath()}, null,
+                new MediaScannerConnection.OnScanCompletedListener() {
+                    public void onScanCompleted(String path, Uri uri) {
+                        Log.d(TAG, "authentikit - onScanCompleted (crop): " + path + " - " + uri);
+                        //load image in background
+                        new ImageLoaderClass().execute(path);
+                    }
+                });
     }
 
     @Override
@@ -415,8 +461,7 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
             progressDialog.dismiss();
 
             if(aBoolean) {
-                //resultView();
-                //secondTest();
+                resultView();
             } else {
                 Toast.makeText(getApplicationContext(), "Query image is not qualified to continue the process. Try another one.", Toast.LENGTH_SHORT).show();
             }
@@ -538,7 +583,7 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
                 }
 
             Log.d(TAG, "authentikit - fMatchAve: " + String.valueOf(fMatchAve));
-                
+
             return true;
         }
     }
@@ -586,11 +631,6 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
 
     private void hasDataset(final CustomCallback customCallback) {
         String datasetURL = "datasets/mac/"+dataset+".jpg";
-//        if(noOfTest.equals("1")){
-//            datasetURL = "datasets/mac/maclogo.jpg";
-//        }else{
-//            datasetURL = "datasets/mac/maccount.jpg";
-//        }
 
         storageRef.child(datasetURL).getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
             @Override
@@ -760,71 +800,19 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
     }
 
     private void secondTest(){
-//        if(noOfTest.equals("1")){
-//            noOfTest = "2";
-//            new GetDataset();
-//        }else{
-//
-////            if(firstResult>secondResult){
-////                authenticity = "Counterfeit MAC";
-////            }else{
-////                authenticity = "Authentic MAC";
-////            }
-//
-//            int diff = firstResult-secondResult;
-//            if(diff<50){
-//                authenticity = "Counterfeit MAC";
-//            }else{
-//                authenticity = "Authentic MAC";
-//            }
-//
-//            resultView();
-//        }
+        testNum = "2";
 
-        if(dataset.equals("macstick")){
-            dataset = "maclogo";
-            Intent i = new Intent(ImageProcActivity.this, ImageProcActivity.class);
-            Bundle extras = new Bundle();
-            extras.putString("dataset", dataset);
-            extras.putString("auth", tempAuth);
-            i.putExtras(extras);
-            startActivity(i);
-            finish();
-        }else{
-            if(fAuth.equals(tempAuth)){
-                authenticity = tempAuth;
-            }else{
-                authenticity = "Counterfeit MAC";
-            }
-
-            resultView();
-        }
-
+        dataset = "maclogo";
+        Intent i = new Intent(ImageProcActivity.this, ImageProcActivity.class);
+        Bundle extras = new Bundle();
+        extras.putString("dataset", dataset);
+        extras.putString("testNum", testNum);
+        i.putExtras(extras);
+        startActivity(i);
+        finish();
     }
 
-    public void textRecognizer(){
-//        //Text Recognition using Mobile Vision API developed by Google
-//        Bitmap bitmapOcr = selectedImage.copy(Bitmap.Config.ARGB_8888, true);
-//        TextRecognizer textRecognizer = new TextRecognizer.Builder(getApplicationContext()).build();
-//
-//        if(!textRecognizer.isOperational()) {
-//            Toast.makeText(getApplicationContext(),"Could not get text",Toast.LENGTH_LONG);
-//        }else{
-//
-//            //selected image used to extract character or text
-//
-//            Frame frame = new Frame.Builder().setBitmap(bitmapOcr).build();
-//            SparseArray<TextBlock> items = textRecognizer.detect(frame);
-//            StringBuilder sb = new StringBuilder();
-//
-//            for(int i = 0; i < items.size(); ++i) {
-//                TextBlock tb = items.valueAt(i);
-//                sb.append(tb.getValue());
-//                sb.append("\n");
-//            }
-//
-//            Toast.makeText(getApplicationContext(),sb.toString(),Toast.LENGTH_LONG).show();
-//        }
+    public String textRecognizer(){
         //Text Recognition using Mobile Vision API developed by Google
         TextRecognizer textRecognizer = new TextRecognizer.Builder(getApplicationContext()).build();
         StringBuilder stringBuilder = null;
@@ -849,7 +837,74 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
                 stringBuilder.append(" ");
             }
             Toast.makeText(getApplicationContext(),stringBuilder.toString(),Toast.LENGTH_LONG).show();
+
         }
 
+        String text = stringBuilder.toString().replaceAll("\n"," ").toLowerCase();
+        Log.d(TAG, "authentikit (text): " + text);
+
+
+        return text;
+    }
+
+    private void getShade(final String fin){
+        databaseReferenceDataset = firebaseDatabase.getReference("label");
+
+        databaseReferenceDataset.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                int dataSnapshotLength = (int) dataSnapshot.getChildrenCount();
+
+                for (DataSnapshot dataset: dataSnapshot.getChildren()) {
+                    Log.d(TAG, "authentikit (dataset): " + dataset);
+
+                    String macDataset = dataset.getKey();
+                    Log.d(TAG, "authentikit (macDataset): " + macDataset);
+                    dataSnapshotLength--;
+
+                    if(fin.equals(macDataset)){
+                        String shadeTmp = dataset.child("shade").getValue(String.class);
+                        shadesVal = shadeTmp;
+                        Log.d(TAG, "authentikit (shades): " + shadesVal);
+
+                            if(shadesVal!=null){
+                                Toast.makeText(getApplicationContext(),"shade: " + shadesVal,Toast.LENGTH_LONG).show();
+                                Log.d(TAG, "authentikit --(after getshade): " + shadesVal);
+                                String[] arr = shadesVal.split(",");
+
+                                for(int j=0;j<arr.length;j++){
+                                    if(label.contains(arr[j])){
+                                        Log.d(TAG, "authentikit (arr): " + arr[j]);
+                                        Toast.makeText(getApplicationContext(),"Success! Authentic MAC Lipstick",Toast.LENGTH_LONG).show();
+                                        Log.d(TAG, "authentikit Success! Authentic MAC Lipstick");
+
+                                        secondTest();
+                                    }
+                                }
+                            }else{
+                                Toast.makeText(getApplicationContext(),"COUNTERFEIT MAC Lipstick",Toast.LENGTH_LONG).show();
+                                Log.d(TAG, "authentikit COUNTERFEIT MAC Lipstick");
+                                authenticity = "Counterfeit MAC";
+                            }
+
+
+                    } else {
+                        if(dataSnapshotLength == 0) {
+                            //customCallback.onCallback(null);
+                        }
+                    }
+
+                }
+                if(dataSnapshotLength==0){
+                    isDone = true;
+                }
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                //customCallback.onCallback(null);
+            }
+        });
     }
 }

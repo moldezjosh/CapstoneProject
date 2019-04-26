@@ -62,8 +62,7 @@
         <item>MAC Bottom Sticker</item>
     </string-array>
 
-    <string name="mac_logo">MAC Logo</string>
-    <string name="mac_sticker">MAC Bottom Sticker</string>
+    <string name="btn_capture">Take a Picture</string>
 
 
 </resources>
