@@ -59,14 +59,16 @@ public class ResultActivity extends AppCompatActivity {
         TextView authRateView = findViewById(R.id.auth_rate);
         authRateView.setText(authenticity);
 
-        if(authenticity.equals("Authentic MAC")){
+        final String detail = extras.getString("detail");
+        TextView detView = findViewById(R.id.detail);
+        detView.setText(detail);
+
+
+        if(authenticity.equals("AUTHENTIC")){
             authRateView.setTextColor(Color.GREEN);
-        }else if(authenticity.equals("Counterfeit MAC")){
+        }else if(authenticity.equals("COUNTERFEIT")){
             authRateView.setTextColor(Color.RED);
-        }else{
-            authRateView.setText("Not a MAC Bullet Lipstick/Logo was not captured.");
-            authRateView.setTextColor(Color.WHITE);
-            authRateView.setTextSize(16);
+            detView.setText(detail);
         }
 
 
@@ -92,7 +94,7 @@ public class ResultActivity extends AppCompatActivity {
                 postDelayed(new Runnable(){
             @Override
             public void run(){
-                if(authenticity.equals("Counterfeit MAC")){
+                if(authenticity.equals("COUNTERFEIT")){
                     warning(extras);
                 }
             }
