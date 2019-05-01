@@ -46,10 +46,12 @@ public class HomeActivity extends AppCompatActivity {
         btnLogo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                testNum = "1";
+                testNum = "2";
+                String dataset = "maclogo";
 
                 Intent i = new Intent(HomeActivity.this, ImageProcActivity.class);
                 Bundle extras = new Bundle();
+                extras.putString("dataset", dataset);
                 extras.putString("testNum", testNum);
                 i.putExtras(extras);
                 startActivity(i);

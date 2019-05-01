@@ -74,6 +74,7 @@ import org.opencv.core.Mat;
 import org.opencv.core.MatOfDMatch;
 import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.MatOfPoint;
+import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
@@ -95,8 +96,10 @@ import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Vector;
 
 import me.xdrop.fuzzywuzzy.FuzzySearch;
 import me.xdrop.fuzzywuzzy.model.ExtractedResult;
@@ -106,14 +109,19 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
     private static final String TAG = "ImageProcActivity";
     ImageView imgView;
     Integer REQUEST_CAMERA = 1, SELECT_FILE = 0;
-    private static Bitmap selectedImage, result, sampleBitmap, datasetBitmap, bmp, croppedBitmap;
+    private static Bitmap selectedImage, result, sampleBitmap, datasetBitmap, bmp, croppedBitmap, rectBitmap;
     ProgressBar pbar;
     FloatingActionButton auth;
-    Mat Rgba, imgGray, sampleMat, datasetMat, graySampleMat, grayDatasetMat, sampleDescriptors, datasetDescriptors;
+    Mat Rgba, imgGray, sampleMat, graySampleMat, grayDatasetMat, sampleDescriptors, datasetDescriptors, imageMat;
     FeatureDetector detector;
     private String mCurrentPhotoPath = null, authenticity, matchResult, dataset, detail, label, finishVal, shadesVal, testNum;
     private String[] finish = {"amplified","cremesheen","frost","lustre","matte","powder kiss","retro matte","satin"};
     boolean isFakeShade = true;
+    //image holder
+    //Mat bwIMG, hsvIMG, lrrIMG, urrIMG, dsIMG, usIMG, cIMG, hovIMG;
+    MatOfPoint2f approxCurve;
+
+    int threshold;
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
@@ -185,6 +193,8 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
 
                         checkLabel();
                     }else{
+
+                        cropRect();
                         new GetDataset().execute(view);
                     }
                 } else {
@@ -375,6 +385,89 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
         }
     }
 
+    private void cropRect(){
+        imageMat=new Mat();
+        int xRect=0, yRect=0, wRect=0, hRect=0;
+
+        Utils.bitmapToMat(selectedImage,imageMat);
+        Mat imgSource=imageMat.clone();
+
+        Mat imageHSV = new Mat(imgSource.size(), CvType.CV_8UC4);
+        Mat imageBlurr = new Mat(imgSource.size(),CvType.CV_8UC4);
+        Mat imageA = new Mat(imgSource.size(), CvType.CV_8UC1);
+        Imgproc.cvtColor(imgSource, imageHSV, Imgproc.COLOR_BGR2GRAY);
+        Imgproc.GaussianBlur(imageHSV, imageBlurr, new Size(5,5), 0);
+        Imgproc.adaptiveThreshold(imageBlurr, imageA, 255,Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY,7, 5);
+
+        Bitmap analyzed=Bitmap.createBitmap(imgSource.cols(),imgSource.rows(),Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(imageA,analyzed);
+        //------------------
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        //String root = Environment.getExternalStorageDirectory().toString();
+        File myDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "AuthentiKit");
+        myDir.mkdirs();
+        String fname = "Image-"+timeStamp+".jpg";
+        File file = new File(myDir, fname);
+        if (file.exists()) file.delete();
+        //Log.i("LOAD", root + fname);
+        try {
+            FileOutputStream out = new FileOutputStream(file);
+            analyzed.compress(Bitmap.CompressFormat.JPEG, 90, out);
+            Log.d(TAG, "authentikit - COMPLETED: ");
+            out.flush();
+            out.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+        Imgproc.findContours(imageA, contours, new Mat(), Imgproc.RETR_LIST,Imgproc.CHAIN_APPROX_SIMPLE);
+        //Imgproc.findContours(imageA, contours, new Mat(), Imgproc.RETR_EXTERNAL,Imgproc.CHAIN_APPROX_SIMPLE);
+
+        Vector<Mat> rectangles = new Vector<Mat>();
+
+        for(int i=0; i< contours.size();i++){
+            if (Imgproc.contourArea(contours.get(i)) > 50 )
+            {
+                Rect rect = Imgproc.boundingRect(contours.get(i));
+                if ((rect.height > 30 && rect.height < 120) && (rect.width > 120 && rect.width < 500))
+                {
+                    xRect = rect.x - (rect.height/2);
+                    yRect = rect.y - (rect.height/2);
+                    wRect = rect.width + rect.height;
+                    hRect = rect.height * 2;
+
+                    Rect rec = new Rect(rect.x, rect.y, rect.width, rect.height);
+                    rectangles.add(new Mat(imgSource, rec));
+                    //Imgproc.rectangle(imgSource, new Point(rect.x,rect.y), new Point(rect.x+rect.width,rect.y+rect.height),new Scalar(0,0,255));
+                    Imgproc.rectangle(imgSource, new Point(xRect,yRect), new Point(xRect+wRect,yRect+hRect),new Scalar(0,0,255));
+                }
+
+
+            }
+        }
+
+        Utils.matToBitmap(imageA, selectedImage);
+        rectBitmap = Bitmap.createBitmap(selectedImage, xRect, yRect, wRect, hRect);
+//        Bitmap analyzed2=Bitmap.createBitmap(imgSource.cols(),imgSource.rows(),Bitmap.Config.ARGB_8888);
+//        Utils.matToBitmap(imgSource,analyzed2);
+
+
+        fname = "Image-"+timeStamp+"-2"+".jpg";
+        file = new File(myDir, fname);
+        if (file.exists()) file.delete();
+        //Log.i("LOAD", root + fname);
+        try {
+            FileOutputStream out = new FileOutputStream(file);
+            rectBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);
+            Log.d(TAG, "authentikit - COMPLETED: 2");
+            out.flush();
+            out.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -394,7 +487,7 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
                         imgView.setImageBitmap(selectedImage);
                         mCurrentPhotoPath = null;
 
-                        cropCircle();
+                        //cropCircle();
                     } catch (FileNotFoundException e) {
                         return;
                     }
@@ -516,7 +609,7 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
             Rgba = new Mat();
             imgGray = new Mat();
             sampleMat = new Mat();
-            datasetMat = new Mat();
+            //datasetMat = new Mat();
 
             sampleKeypoints = new MatOfKeyPoint();
             datasetKeypoints = new MatOfKeyPoint();
@@ -558,49 +651,33 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
            //bmp = Bitmap.createBitmap(200, 100, Bitmap.Config.ARGB_8888);
 
             //Newly captured image
-            sampleBitmap = selectedImage.copy(Bitmap.Config.ARGB_8888, true);
+            //sampleBitmap = selectedImage.copy(Bitmap.Config.ARGB_8888, true);
 
             publishProgress("Images Preprocessing");
 
-            //Newly captured image preprocessing, image binarization
-            Utils.bitmapToMat(sampleBitmap, sampleMat);
-            Imgproc.cvtColor(sampleMat, sampleMat, Imgproc.COLOR_RGB2GRAY);
-            Imgproc.adaptiveThreshold(sampleMat, sampleMat, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 11, 2);
-            Imgproc.GaussianBlur(sampleMat, sampleMat, new Size(5,5), 0);
-            Imgproc.threshold(sampleMat, sampleMat, 0, 255, Imgproc.THRESH_BINARY + Imgproc.THRESH_OTSU);
 
-            try {
-                bmp = Bitmap.createBitmap(sampleMat.cols(), sampleMat.rows(), Bitmap.Config.ARGB_8888);
-                Utils.matToBitmap(sampleMat, bmp);
-            }
-            catch (CvException e){Log.d("Exception",e.getMessage());}
+            Mat sampleMat = new Mat(rectBitmap.getWidth(), rectBitmap.getHeight(),
+                    CvType.CV_8UC1);
+            Utils.bitmapToMat(rectBitmap, sampleMat);
 
-            //imgView.setImageBitmap(bmp);
 
-            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-            //String root = Environment.getExternalStorageDirectory().toString();
-            File myDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "AuthentiKit");
-            myDir.mkdirs();
-            String fname = "Image-"+timeStamp+".jpg";
-            File file = new File(myDir, fname);
-            if (file.exists()) file.delete();
-            //Log.i("LOAD", root + fname);
-            try {
-                FileOutputStream out = new FileOutputStream(file);
-                bmp.compress(Bitmap.CompressFormat.JPEG, 90, out);
-                out.flush();
-                out.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            //dataset image binarization
+            /* convert bitmap to mat */
+            Mat datasetMat = new Mat(bitmap.getWidth(), bitmap.getHeight(),
+                    CvType.CV_8UC1);
+            Mat datasetGrayMat = new Mat(bitmap.getWidth(), bitmap.getHeight(),
+                    CvType.CV_8UC1);
 
-            //Dataset image preprocessing, image binarization
             Utils.bitmapToMat(bitmap, datasetMat);
-            Imgproc.cvtColor(datasetMat, datasetMat, Imgproc.COLOR_RGB2GRAY);
-            Imgproc.adaptiveThreshold(datasetMat, datasetMat, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 11, 2);
-            Imgproc.GaussianBlur(datasetMat, datasetMat, new Size(5,5), 0);
-            Imgproc.threshold(datasetMat, datasetMat, 0, 255, Imgproc.THRESH_BINARY + Imgproc.THRESH_OTSU);
 
+            /* convert to grayscale */
+            int colorChannels = (datasetMat.channels() == 3) ? Imgproc.COLOR_BGR2GRAY
+                    : ((datasetMat.channels() == 4) ? Imgproc.COLOR_BGRA2GRAY : 1);
+
+            Imgproc.cvtColor(datasetMat, datasetGrayMat, colorChannels);
+            Imgproc.GaussianBlur(datasetGrayMat, datasetGrayMat, new Size(9, 9), 2, 2);
+            Imgproc.adaptiveThreshold(datasetGrayMat, datasetGrayMat, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 11, 2);
+            Utils.matToBitmap(datasetGrayMat, bitmap);
 
             //initializing feature detector and descriptor
             detector = FeatureDetector.create(FeatureDetector.ORB);
@@ -613,11 +690,11 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
 
             //detecting stable image keypoints
             detector.detect(sampleMat, sampleKeypoints);
-            detector.detect(datasetMat, datasetKeypoints);
+            detector.detect(datasetGrayMat, datasetKeypoints);
 
             //Describe keypoints, extract distinct image features
             descExtractor.compute(sampleMat, sampleKeypoints, sampleDescriptors);
-            descExtractor.compute(datasetMat, datasetKeypoints, datasetDescriptors);
+            descExtractor.compute(datasetGrayMat, datasetKeypoints, datasetDescriptors);
 
             publishProgress("Matching");
 
@@ -652,7 +729,7 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
             fMatchAve = fMatchAve/intGMatch;
 
 
-                if(Math.round(fMatchAve) == 64) {
+                if(Math.round(fMatchAve) > 60) {
                     authenticity = "AUTHENTIC";
                 } else {
                     authenticity = "COUNTERFEIT";
@@ -991,7 +1068,7 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
         progressDialog.setCancelable(false);
         progressDialog.setMessage("Processing request...");
         progressDialog.show();
-        
+
         databaseReferenceDataset = firebaseDatabase.getReference("label");
 
         databaseReferenceDataset.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -1079,7 +1156,7 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
                                 captureImage();
                             }
                         })
-                .setTitle("Instruction!")
+                .setTitle("Instruction")
                 .setIcon(R.drawable.ic_photo_camera_black_24dp);
         // create alert dialog
         AlertDialog alertDialog = alertDialogBuilder.create();
