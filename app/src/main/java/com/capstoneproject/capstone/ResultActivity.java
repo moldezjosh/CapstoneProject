@@ -43,7 +43,7 @@ public class ResultActivity extends AppCompatActivity {
     ImageView image;
     Button btnHome;
     Bitmap result;
-    private static int ALERT_TIME_OUT=3000;
+    private static int ALERT_TIME_OUT=2000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
