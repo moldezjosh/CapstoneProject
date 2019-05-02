@@ -115,13 +115,13 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
     Mat Rgba, imgGray, sampleMat, graySampleMat, grayDatasetMat, sampleDescriptors, datasetDescriptors, imageMat;
     FeatureDetector detector;
     private String mCurrentPhotoPath = null, authenticity, matchResult, dataset, detail, label, finishVal, shadesVal, testNum;
-    private String[] finish = {"amplified","cremesheen","frost","lustre","matte","powder kiss","retro matte","satin"};
+    private String[] finish = {"matte","amplified","cremesheen","lustre","powder kiss","retro matte","satin"};
     boolean isFakeShade = true;
     //image holder
     //Mat bwIMG, hsvIMG, lrrIMG, urrIMG, dsIMG, usIMG, cIMG, hovIMG;
     MatOfPoint2f approxCurve;
 
-    int threshold;
+    int circNum;
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
@@ -188,10 +188,16 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
 
                     if(testNum.equals("1")){
 
-                        label = textRecognizer(croppedBitmap);
-                        Log.d(TAG, "authentikit (Label): " + label);
+                        cropCircle();
+                        if(circNum!=2080){
+                            label = textRecognizer(croppedBitmap);
+                            Log.d(TAG, "authentikit (Label): " + label);
 
-                        checkLabel();
+                            checkLabel();
+                        }else{
+                            errorCirc();
+                        }
+
                     }else{
 
                         cropRect();
@@ -297,6 +303,10 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
                 CvType.CV_8UC1);
 
         Utils.bitmapToMat(selectedImage, mat);
+        Mat imgSource=mat.clone();
+
+
+        //Mat imgSource=imageMat.clone();
 
         /* convert to grayscale */
         int colorChannels = (mat.channels() == 3) ? Imgproc.COLOR_BGR2GRAY
@@ -306,6 +316,28 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
 
         /* reduce the noise so we avoid false circle detection */
         Imgproc.GaussianBlur(grayMat, grayMat, new Size(9, 9), 2, 2);
+
+        Bitmap analyzed=Bitmap.createBitmap(imgSource.cols(),imgSource.rows(),Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(grayMat,analyzed);
+
+        //------------------
+//        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+//        //String root = Environment.getExternalStorageDirectory().toString();
+//        File myDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "AuthentiKit");
+//        myDir.mkdirs();
+
+//        String fname = "Image-"+timeStamp+"gray"+".jpg";
+//        File file = new File(myDir, fname);
+//        if (file.exists()) file.delete();
+//        //Log.i("LOAD", root + fname);
+//        try {
+//            FileOutputStream out = new FileOutputStream(file);
+//            analyzed.compress(Bitmap.CompressFormat.JPEG, 90, out);
+//            out.flush();
+//            out.close();
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
 
         // accumulator value
         double dp = 1.2d;
@@ -333,7 +365,14 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
                 Imgproc.CV_HOUGH_GRADIENT, dp, minDist, param1,
                 param2, minRadius, maxRadius);
 
-        //draw circle
+        /* get the number of circles detected */
+        int numberOfCircles = (circles.rows() == 0) ? 0 : circles.cols();
+
+        Log.d(TAG, "authentikit - circles: " + numberOfCircles);
+        circNum = numberOfCircles;
+
+        if(numberOfCircles!=2080){
+            //draw circle
             /* get the circle details, circleCoordinates[0, 1, 2] = (x,y,r)
              * (x,y) are the coordinates of the circle's center
              */
@@ -355,37 +394,48 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
                     new Point(x + 5, y + 5),
                     new Scalar(0, 128, 255), -1);
 
-        /* convert back to bitmap */
-        Utils.matToBitmap(mat, selectedImage);
+            /* convert back to bitmap */
+            //Utils.matToBitmap(mat, analyzed);
 
-        final int width = radius * 2;
-        final int height = radius * 2;
-        int xVal = x - radius;
-        int yVal = y - radius;
+            final int width = radius * 2;
+            final int height = radius * 2;
+            int xVal = x - radius;
+            int yVal = y - radius;
 
-        croppedBitmap = Bitmap.createBitmap(selectedImage, xVal, yVal, width, height);
+            croppedBitmap = Bitmap.createBitmap(selectedImage, xVal, yVal, width, height);
 
 
-        //------------------
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        //String root = Environment.getExternalStorageDirectory().toString();
-        File myDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "AuthentiKit");
-        myDir.mkdirs();
-        String fname = "Image-"+timeStamp+".jpg";
-        File file = new File(myDir, fname);
-        if (file.exists()) file.delete();
-        //Log.i("LOAD", root + fname);
-        try {
-            FileOutputStream out = new FileOutputStream(file);
-            croppedBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);
-            out.flush();
-            out.close();
-        } catch (Exception e) {
-            e.printStackTrace();
+//            fname = "Image-"+timeStamp+"-wCirc"+".jpg";
+//            file = new File(myDir, fname);
+//            if (file.exists()) file.delete();
+//            //Log.i("LOAD", root + fname);
+//            try {
+//                FileOutputStream out = new FileOutputStream(file);
+//                selectedImage.compress(Bitmap.CompressFormat.JPEG, 90, out);
+//                out.flush();
+//                out.close();
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+
+//            String fname = "Image-"+timeStamp+"-cropCir"+".jpg";
+//            File file = new File(myDir, fname);
+//            if (file.exists()) file.delete();
+//            //Log.i("LOAD", root + fname);
+//            try {
+//                FileOutputStream out = new FileOutputStream(file);
+//                croppedBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);
+//                out.flush();
+//                out.close();
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
         }
+
     }
 
     private void cropRect(){
+
         imageMat=new Mat();
         int xRect=0, yRect=0, wRect=0, hRect=0;
 
@@ -397,16 +447,34 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
         Mat imageA = new Mat(imgSource.size(), CvType.CV_8UC1);
         Imgproc.cvtColor(imgSource, imageHSV, Imgproc.COLOR_BGR2GRAY);
         Imgproc.GaussianBlur(imageHSV, imageBlurr, new Size(5,5), 0);
+
+        //Bitmap analyzed=Bitmap.createBitmap(imgSource.cols(),imgSource.rows(),Bitmap.Config.ARGB_8888);
+        //Utils.matToBitmap(imageBlurr,analyzed);
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        //String root = Environment.getExternalStorageDirectory().toString();
+        File myDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "AuthentiKit");
+        myDir.mkdirs();
+//        String fname = "Image-"+timeStamp+"-blurRect"+".jpg";
+//        File file = new File(myDir, fname);
+//        if (file.exists()) file.delete();
+//        //Log.i("LOAD", root + fname);
+//        try {
+//            FileOutputStream out = new FileOutputStream(file);
+//            analyzed.compress(Bitmap.CompressFormat.JPEG, 90, out);
+//            Log.d(TAG, "authentikit - COMPLETED: ");
+//            out.flush();
+//            out.close();
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+
         Imgproc.adaptiveThreshold(imageBlurr, imageA, 255,Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY,7, 5);
 
         Bitmap analyzed=Bitmap.createBitmap(imgSource.cols(),imgSource.rows(),Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(imageA,analyzed);
         //------------------
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        //String root = Environment.getExternalStorageDirectory().toString();
-        File myDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "AuthentiKit");
-        myDir.mkdirs();
-        String fname = "Image-"+timeStamp+".jpg";
+
+        String fname = "Image-"+timeStamp+"-threshRect"+".jpg";
         File file = new File(myDir, fname);
         if (file.exists()) file.delete();
         //Log.i("LOAD", root + fname);
@@ -447,25 +515,25 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
             }
         }
 
-        Utils.matToBitmap(imageA, selectedImage);
-        rectBitmap = Bitmap.createBitmap(selectedImage, xRect, yRect, wRect, hRect);
+        Utils.matToBitmap(imageA, analyzed);
+        rectBitmap = Bitmap.createBitmap(analyzed, xRect, yRect, wRect, hRect);
 //        Bitmap analyzed2=Bitmap.createBitmap(imgSource.cols(),imgSource.rows(),Bitmap.Config.ARGB_8888);
 //        Utils.matToBitmap(imgSource,analyzed2);
 
 
-        fname = "Image-"+timeStamp+"-2"+".jpg";
-        file = new File(myDir, fname);
-        if (file.exists()) file.delete();
-        //Log.i("LOAD", root + fname);
-        try {
-            FileOutputStream out = new FileOutputStream(file);
-            rectBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);
-            Log.d(TAG, "authentikit - COMPLETED: 2");
-            out.flush();
-            out.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+//        fname = "Image-"+timeStamp+"-cropRect"+".jpg";
+//        file = new File(myDir, fname);
+//        if (file.exists()) file.delete();
+//        //Log.i("LOAD", root + fname);
+//        try {
+//            FileOutputStream out = new FileOutputStream(file);
+//            rectBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);
+//            Log.d(TAG, "authentikit - COMPLETED: 2");
+//            out.flush();
+//            out.close();
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
     }
 
 
@@ -486,8 +554,6 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
 
                         imgView.setImageBitmap(selectedImage);
                         mCurrentPhotoPath = null;
-
-                        //cropCircle();
                     } catch (FileNotFoundException e) {
                         return;
                     }
@@ -679,6 +745,26 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
             Imgproc.adaptiveThreshold(datasetGrayMat, datasetGrayMat, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 11, 2);
             Utils.matToBitmap(datasetGrayMat, bitmap);
 
+
+//            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+//            //String root = Environment.getExternalStorageDirectory().toString();
+//            File myDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "AuthentiKit");
+//            myDir.mkdirs();
+//            String fname = "Image-"+timeStamp+".jpg";
+//            File file = new File(myDir, fname);
+//            if (file.exists()) file.delete();
+//            //Log.i("LOAD", root + fname);
+//            try {
+//                FileOutputStream out = new FileOutputStream(file);
+//                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);
+//                Log.d(TAG, "authentikit - COMPLETED: ");
+//                out.flush();
+//                out.close();
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+
+
             //initializing feature detector and descriptor
             detector = FeatureDetector.create(FeatureDetector.ORB);
             descExtractor = DescriptorExtractor.create(DescriptorExtractor.ORB);
@@ -729,7 +815,7 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
             fMatchAve = fMatchAve/intGMatch;
 
 
-                if(Math.round(fMatchAve) > 60) {
+                if(Math.round(fMatchAve) >= 55) {
                     authenticity = "AUTHENTIC";
                 } else {
                     authenticity = "COUNTERFEIT";
@@ -910,6 +996,7 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
                 if(location != null) {
                     latitude = location.getLatitude();
                     longitude = location.getLongitude();
+                    Log.d(TAG, "getLocation: " + latitude + " - " +longitude);
                 }
             }
         }
@@ -955,7 +1042,7 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
     private void secondTest(){
         testNum = "2";
 
-        dataset = "maclogo";
+        dataset = "maclogo-crop";
         Intent i = new Intent(ImageProcActivity.this, ImageProcActivity.class);
         Bundle extras = new Bundle();
         extras.putString("dataset", dataset);
@@ -992,22 +1079,22 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
 
             Utils.matToBitmap(grayMat, bitmap);
 
-            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-            //String root = Environment.getExternalStorageDirectory().toString();
-            File myDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "AuthentiKit");
-            myDir.mkdirs();
-            String fname = "Image-"+timeStamp+".jpg";
-            File file = new File(myDir, fname);
-            if (file.exists()) file.delete();
-            //Log.i("LOAD", root + fname);
-            try {
-                FileOutputStream out = new FileOutputStream(file);
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);
-                out.flush();
-                out.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+//            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+//            //String root = Environment.getExternalStorageDirectory().toString();
+//            File myDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "AuthentiKit");
+//            myDir.mkdirs();
+//            String fname = "Image-"+timeStamp+"-text"+".jpg";
+//            File file = new File(myDir, fname);
+//            if (file.exists()) file.delete();
+//            //Log.i("LOAD", root + fname);
+//            try {
+//                FileOutputStream out = new FileOutputStream(file);
+//                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);
+//                out.flush();
+//                out.close();
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
 
             Frame frame = new Frame.Builder().setBitmap(bitmap).build();
             SparseArray<TextBlock> items = textRecognizer.detect(frame);
@@ -1037,7 +1124,7 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
             ExtractedResult extractedResults = FuzzySearch.extractOne(finish[i], myList);
             Log.d(TAG, "authentikit (extracted results): " + extractedResults.getString());
             Log.d(TAG, "authentikit (extracted score): " + extractedResults.getScore());
-            if(extractedResults.getScore() >= 80){
+            if(extractedResults.getScore() >= 70){
                 Log.d(TAG, "authentikit : AUTHENTIC");
                 isFake = false;
                 getShade(finish[i]);
@@ -1047,6 +1134,9 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
 
         if(isFake){
             Log.d(TAG, "authentikit : COUNTERFEIT");
+            authenticity = "COUNTERFEIT";
+            detail = "The finish was not found";
+            resultView();
         }
 
 //        ExtractedResult extractedResults = FuzzySearch.extractOne("matte", myList);
@@ -1105,6 +1195,7 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
                                         progressDialog.dismiss();
                                         Log.d(TAG, "authentikit : AUTHENTIC");
                                         Log.d(TAG, "authentikit : (shade) " + arr[i]);
+                                        secondTest();
                                         break;
 
                                     }
@@ -1114,6 +1205,9 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
                                 if(isFakeShade){
                                     progressDialog.dismiss();
                                     Log.d(TAG, "authentikit : COUNTERFEIT");
+                                    authenticity = "COUNTERFEIT";
+                                    detail = "The shade was not found";
+                                    resultView();
                                     break;
                                 }else{
                                     break;
@@ -1158,6 +1252,27 @@ public class ImageProcActivity extends AbsRuntimePermission implements LocationL
                         })
                 .setTitle("Instruction")
                 .setIcon(R.drawable.ic_photo_camera_black_24dp);
+        // create alert dialog
+        AlertDialog alertDialog = alertDialogBuilder.create();
+        // show it
+        alertDialog.show();
+    }
+
+    private void errorCirc(){
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(ImageProcActivity.this);
+
+        alertDialogBuilder
+                .setMessage("Bottom sticker not found! Try again.")
+                .setCancelable(false)
+                .setPositiveButton("OK",
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(final DialogInterface dialog, int which) {
+                                alertInstruction("1");
+                            }
+                        })
+                .setTitle("Error")
+                .setIcon(R.drawable.ic_warning_black_24dp);
         // create alert dialog
         AlertDialog alertDialog = alertDialogBuilder.create();
         // show it
