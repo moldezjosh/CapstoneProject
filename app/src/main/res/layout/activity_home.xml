@@ -23,13 +23,6 @@
             android:layout_marginBottom="30dp"
             android:src="@mipmap/ic_launcher" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/select"
-            android:textColor="@color/white"
-            android:gravity="center_horizontal"
-            android:layout_marginBottom="10dp"/>
 
         <Button
             android:id="@+id/btn_capture"
